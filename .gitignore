@@ -1,0 +1,9 @@
+
+*.aa
+*.ab
+*.ac
+.profile
+.bash_profile
+.bash_history
+.bashrc
+.inputrc
