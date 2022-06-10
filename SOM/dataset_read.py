@@ -62,16 +62,16 @@ class DATAREAD():
         #print(X[name])
         for i in range(0, X.shape[0]):
             if  X.at[i,name]== 'water':
-                X.at[i,name] =1            
+                X.at[i,name]=0            
             elif  X.at[i,name]== 'forest':
-                    X.at[i,name]=2 
+                X.at[i,name]=1
             elif  X.at[i,name]== 'grass': 
-                X.at[i,name]=3 
+                X.at[i,name]=2 
             elif  X.at[i,name]== 'orchard': 
-                X.at[i,name]=4 
+                X.at[i,name]=3 
             elif  X.at[i,name]== 'impervious': 
-                X.at[i,name]=5 
+                X.at[i,name]=4
             elif  X.at[i,name]== 'farm': 
-                X.at[i,name]=6  
+                X.at[i,name]=5  
             else: 
                 print("Unkonwn value {}".format(X.at[i,name]))
