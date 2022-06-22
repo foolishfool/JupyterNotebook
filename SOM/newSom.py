@@ -58,6 +58,7 @@ class SOM():
         rng = np.random.default_rng(random_state)
 
         self.weights= rng.normal(size=(m * n, dim))
+        #print("initila self.weigts {}".format(self.weights))
         self.weights1= rng.normal(size=(m * n, dim))
         self.weights2= rng.normal(size=(m * n, dim))
         self.weights3= rng.normal(size=(m * n, dim))
@@ -112,7 +113,8 @@ class SOM():
         #print(x)
         # Stack x to have one row per weight 
         x_stack = np.stack([x]*(self.m*self.n), axis=0)
-
+        #print("x_stack {}".format(x_stack))
+        #print("self.weights{}".format(self.weights));
         #print("x_stack{}".format(x_stack));
         # x_stack , with mxn row , each row has the same array: x
         # Get index of best matching unit
@@ -142,7 +144,7 @@ class SOM():
         # Multiply by difference between input and weights
         delta = local_multiplier * (x_stack - self.weights).astype(float)
         #print("delta:{}".format(delta))
-        #print("weights:{}".format(self.weights))
+       # print("weights:{}".format(self.weights))
         # Update weights
         self.weights += delta
        
@@ -179,6 +181,8 @@ class SOM():
         None
             Fits the SOM to the given data but does not return anything.
         """
+
+        #print("X {}".format(X))
         # Count total number of iterations
         global_iter_counter = 0
     # the number of samples   
@@ -192,8 +196,10 @@ class SOM():
             if shuffle:
                 rng = np.random.default_rng(self.random_state)
                 indices = rng.permutation(n_samples)
+                #print("indices1 {}".format(indices))
                 # permute the index of samples
                 indices = np.array(indices)
+                #print("indices2 {}".format(indices))
             else:
                 indices = np.arange(n_samples)                       
             
@@ -205,8 +211,13 @@ class SOM():
                 if global_iter_counter > self.max_iter:
                     break
                 #print("idx =  {}  ".format( idx))
-                #   print(X[idx] )
+                #print(X[idx] )
+                
                 input = X[idx]
+                #if (type(input) is np.float64):
+                #    input = [input]
+                    #print("111111111111111" )
+                    #print(input )
                 # Do one step of training
                 self.step(input)
                 # Update learning rate
@@ -259,6 +270,7 @@ class SOM():
             raise NotImplementedError('SOM object has no predict() method until after calling fit().')
 
         # Make sure X has proper shape
+        #print("len(X.shape) {}".format(len(X.shape)))
         assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
         assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
      
