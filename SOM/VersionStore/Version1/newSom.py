@@ -81,7 +81,7 @@ class SOM():
         #print("_get_locations( m, n){}".format(np.argwhere(np.ones(shape=(m, n))).astype(np.int64)))
         return np.argwhere(np.ones(shape=(m, n))).astype(np.int64)
 
-    def _find_bmu(self,x, newWeights, combined = False, train_counter = 0):
+    def _find_bmu(self,x, newWeights, combined = False):
         """
         Find the index of the best matching unit for the input vector x.
         """  
@@ -90,7 +90,7 @@ class SOM():
         if(combined== False):
             x_stack = np.stack([x]*(self.m*self.n), axis=0)
         else:  
-            x_stack = np.stack([x]*(self.m*self.n* (train_counter +2)), axis=0)
+            x_stack = np.stack([x]*(self.m*self.n*2), axis=0)
         # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
         #print("x_stack:{}".format(x_stack ))   #, axis =1  process by row
         #print("newWeights:{}".format(newWeights ))   #, axis =1  process by row
@@ -248,7 +248,7 @@ class SOM():
             #print("generate weight3:\n {}".format(self.weights3))
         return
   
-    def predict(self,X, newWeights, combined= False, train_counter = 0):
+    def predict(self,X, newWeights, combined= False):
         """
         Predict cluster for each element in X.
         Parameters
@@ -274,7 +274,7 @@ class SOM():
         assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
         assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
      
-        labels = np.array([self._find_bmu(x,newWeights,combined,train_counter) for x in X])
+        labels = np.array([self._find_bmu(x,newWeights,combined) for x in X])
     
         #print("predicted label:\n {}".format(labels))
         return labels

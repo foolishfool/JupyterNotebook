@@ -1,0 +1,4 @@
+The version that can achieve right_data_W1_score = 1, and test_data_Wcombine_score > test_data_W1_score
+
+Problem:
+There are still some situation,train_data_W1_score > train_data_WCombine_score
