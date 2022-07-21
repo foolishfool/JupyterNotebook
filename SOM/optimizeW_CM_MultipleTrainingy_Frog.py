@@ -11,7 +11,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from collections import Counter
-
+from sklearn.metrics.cluster import normalized_mutual_info_score
+from sklearn.metrics.cluster import adjusted_rand_score
 class OptimizeW():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
@@ -42,9 +43,9 @@ class OptimizeW():
          #[1,2,3,4,5]it means that predicted class 0 is 1 in true lables, 1 is 2 in true
         self.predicted_classNum= int(som.m*som.n)
 
-        #for w1 matrix predictlabel 1 is 0 in true_label
+        #for W0 matrix predictlabel 1 is 0 in true_label
+        self.PLabel_value_convert_to_Tlabel_value_W0 = np.zeros(self.predicted_classNum, dtype=object)
         self.PLabel_value_convert_to_Tlabel_value_W1 = np.zeros(self.predicted_classNum, dtype=object)
-        self.PLabel_value_convert_to_Tlabel_value_W3 = np.zeros(self.predicted_classNum, dtype=object)
         self.PLabel_value_convert_to_Tlabel_value_WCombined = np.zeros(self.predicted_classNum*2, dtype=object)
         #print(self.classtestdata)
 
@@ -52,26 +53,26 @@ class OptimizeW():
     def _initialdatasetsize(self):
        
         
-        self.all_train_score_W1 =  []
+        self.all_train_score_W0 =  []
         self.all_train_score_W_Combined =  []
-        self.right_data_score_W1  =  []
+        self.right_data_score_W0  =  []
         self.right_data_score_W_combine  =  []
         # the score of error dataset 
-        self.error_data_score_W3 =  []
         self.error_data_score_W1 =  []
+        self.error_data_score_W0 =  []
 
-        self.test_score_W1 =  []
+        self.test_score_W0 =  []
         self.test_score_W_combined =[]
 
 
 
 
-        self.all_train_W1_predicted_label = []
+        self.all_train_W0_predicted_label = []
         self.all_train_W_combined_predicted_label = []
 
 
 
-        self.test_W1_predicted_label =   []
+        self.test_W0_predicted_label =   []
         self.test_W_combined_predicted_label =    []
         
 
@@ -109,28 +110,72 @@ class OptimizeW():
 
         self._initialdatasetsize()
 
-    def purity_score(self,scoretype, y_true, y_pred):
+    def purity_score(self,scorename, y_true, y_pred):
         #print("y_true  {} y_pred size  {}".format(y_true, y_pred))
         # compute contingency matrix (also called confusion matrix)
         contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
         #print(contingency_matrix)
         # return purity 
-        if(scoretype == "all_train_score_W1" ):
-            self.all_train_score_W1.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "right_data_score_W1" ):
-            self.right_data_score_W1.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "right_data_score_W_combine" ):
+        if(scorename == "all_train_score_W0" ):
+            self.all_train_score_W0.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+        if(scorename == "right_data_score_W0" ):
+            self.right_data_score_W0.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+        if(scorename == "right_data_score_W_combine" ):
             self.right_data_score_W_combine.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "error_data_score_W3" ):
-            self.error_data_score_W3.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "error_data_score_W1" ):
-            self.error_data_score_W1 .append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "all_train_score_W_Combined" ):
+        if(scorename == "error_data_score_W1" ):
+            self.error_data_score_W1.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+        if(scorename == "error_data_score_W0" ):
+            self.error_data_score_W0 .append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+        if(scorename == "all_train_score_W_Combined" ):
             self.all_train_score_W_Combined.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "test_score_W1" ):
-            self.test_score_W1.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scoretype == "test_score_W_combined" ):
+        if(scorename == "test_score_W0" ):
+            self.test_score_W0.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+        if(scorename == "test_score_W_combined" ):
             self.test_score_W_combined.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+    
+    def nmiScore(self,scorename, y_true, y_pred):
+        #print(contingency_matrix)
+        # return purity 
+        if(scorename == "all_train_score_W0" ):
+            self.all_train_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "right_data_score_W0" ):
+            self.right_data_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "right_data_score_W_combine" ):
+            self.right_data_score_W_combine.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "error_data_score_W1" ):
+            self.error_data_score_W1.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "error_data_score_W0" ):
+            self.error_data_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "all_train_score_W_Combined" ):
+            self.all_train_score_W_Combined.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "test_score_W0" ):
+            self.test_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
+        if(scorename == "test_score_W_combined" ):
+            self.test_score_W_combined.append(normalized_mutual_info_score(y_true,y_pred))
+
+    def ariScore(self,scorename, y_true, y_pred):
+        #print(contingency_matrix)
+        # return purity 
+        if(scorename == "all_train_score_W0" ):
+            self.all_train_score_W0.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "right_data_score_W0" ):
+            self.right_data_score_W0.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "right_data_score_W_combine" ):
+            self.right_data_score_W_combine.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "error_data_score_W1" ):
+            self.error_data_score_W1.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "error_data_score_W0" ):
+            self.error_data_score_W0.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "all_train_score_W_Combined" ):
+            self.all_train_score_W_Combined.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "test_score_W0" ):
+            self.test_score_W0.append(adjusted_rand_score(y_true,y_pred))
+        if(scorename == "test_score_W_combined" ):
+            self.test_score_W_combined.append(adjusted_rand_score(y_true,y_pred))
+
+
+
+
 
     def groupClusterList(self,class_num_predicted,category,predicted_label,train_counter):
             """
@@ -195,11 +240,11 @@ class OptimizeW():
                 predicted_labels_convert_to_true_labels.append(-1)
         
         if Wtype == 0 :
+            self.PLabel_value_convert_to_Tlabel_value_W0 = predicted_labels_convert_to_true_labels
+            #print("self.PLabel_value_convert_to_Tlabel_value_W0 !!!! {}".format(self.PLabel_value_convert_to_Tlabel_value_W0))
+        if Wtype == 1 :
             self.PLabel_value_convert_to_Tlabel_value_W1 = predicted_labels_convert_to_true_labels
             #print("self.PLabel_value_convert_to_Tlabel_value_W1 !!!! {}".format(self.PLabel_value_convert_to_Tlabel_value_W1))
-        if Wtype == 1 :
-            self.PLabel_value_convert_to_Tlabel_value_W3 = predicted_labels_convert_to_true_labels
-            #print("self.PLabel_value_convert_to_Tlabel_value_W3 !!!! {}".format(self.PLabel_value_convert_to_Tlabel_value_W3))
 
 
 
@@ -228,22 +273,22 @@ class OptimizeW():
 
 
     def TransferPredictedLabelsToTrueLabelsValue(self,category, predicted_labels, convert_predict_value_to_true_value = False, Wtype = 0,train_counter = 0):       
-            #if  W 3 use PLabel_value_convert_to_Tlabel_value_W3 if W1 use PLabel_value_convert_to_Tlabel_value_W1, if combined?
+            #if  W 3 use PLabel_value_convert_to_Tlabel_value_W1 if W0 use PLabel_value_convert_to_Tlabel_value_W0, if combined?
         if(convert_predict_value_to_true_value == True):
             if(Wtype == 0):
                 predicted_clusters= self.groupClusterList(self.predicted_classNum,category,predicted_labels,train_counter)
                 self.PredictedLabelsConvertToTrueLabels( predicted_clusters,Wtype)           
-                predicted_labels =  self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W1)
+                predicted_labels =  self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W0)
                 return predicted_labels
             if(Wtype == 1):
                 predicted_clusters= self.groupClusterList(self.predicted_classNum,category,predicted_labels,train_counter)
                 self.PredictedLabelsConvertToTrueLabels( predicted_clusters,Wtype)           
-                predicted_labels =  self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W3)
+                predicted_labels =  self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W1)
                 # update PLabel_value_convert_to_Tlabel_value_WCombined
                 if(train_counter == 0):
-                    self.PLabel_value_convert_to_Tlabel_value_WCombined = np.concatenate((self.PLabel_value_convert_to_Tlabel_value_W1 , self.PLabel_value_convert_to_Tlabel_value_W3), axis = 0)     
+                    self.PLabel_value_convert_to_Tlabel_value_WCombined = np.concatenate((self.PLabel_value_convert_to_Tlabel_value_W0 , self.PLabel_value_convert_to_Tlabel_value_W1), axis = 0)     
                 else:
-                    self.PLabel_value_convert_to_Tlabel_value_WCombined = np.concatenate((self.PLabel_value_convert_to_Tlabel_value_WCombined , self.PLabel_value_convert_to_Tlabel_value_W3), axis = 0)        
+                    self.PLabel_value_convert_to_Tlabel_value_WCombined = np.concatenate((self.PLabel_value_convert_to_Tlabel_value_WCombined , self.PLabel_value_convert_to_Tlabel_value_W1), axis = 0)        
                 return predicted_labels
 
         else:
@@ -252,10 +297,10 @@ class OptimizeW():
                 predicted_labels = self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_WCombined)
                 return predicted_labels
             if(Wtype == 0):
-                predicted_labels = self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W1)
+                predicted_labels = self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W0)
                 return predicted_labels
             if(Wtype == 1):
-                predicted_labels = self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W3)
+                predicted_labels = self.ConvertLabelValue(predicted_labels,self.PLabel_value_convert_to_Tlabel_value_W1)
                 return predicted_labels
     
     def NormalizeLables(self,predicted_labels,category = 0,convert_predict_value_to_true_value = False,Wtype = 0,train_counter = 0):       
@@ -328,21 +373,35 @@ class OptimizeW():
         #*** is A is self.variable then must return A and change A in code outside the function 
         A = np.array(newlist)
         return A
-    def runOptimize(self,max_training_time = 20):
+
+    def getScore(self,scorename, y_true, y_pred, scoretype):
+        if scoretype == 0:
+            self.purity_score(scorename,y_true,y_pred)
+        elif scoretype == 1:
+            self.nmiScore(scorename,y_true,y_pred)
+        elif scoretype == 2:
+            self.nmiScore(scorename,y_true,y_pred)
+
+
+    def runOptimize(self,max_training_time = 20, score_type = 0):
         hasNoErroData = False
         firstTraining = True 
         current_train_counter = 0             
         # get train and test dataset 
         self._initializedataset()
-        #train som to get W1
+        #train som to get W0
         self.som.fit(self.data_train)
-        self.all_train_W1_predicted_label = self.som.predict(self.data_train,self.som.weights1,train_counter = current_train_counter)   
-        normalized_predicted_label_all_train = self.NormalizeLables(self.all_train_W1_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
-        self.purity_score("all_train_score_W1",self.label_train,normalized_predicted_label_all_train)
+        self.all_train_W0_predicted_label = self.som.predict(self.data_train,self.som.weights1,train_counter = current_train_counter)   
+        normalized_predicted_label_all_train = self.NormalizeLables(self.all_train_W0_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
+        
+        self.getScore("all_train_score_W0",self.label_train,normalized_predicted_label_all_train,score_type)
 
-        self.test_W1_predicted_label = self.som.predict(self.data_test,self.som.weights1,train_counter = current_train_counter)
-        normalized_predicted_label = self.NormalizeLables(self.test_W1_predicted_label,category = 3,train_counter = current_train_counter)
-        self.purity_score("test_score_W1",self.label_test,normalized_predicted_label)
+
+        self.test_W0_predicted_label = self.som.predict(self.data_test,self.som.weights1,train_counter = current_train_counter)
+        normalized_predicted_label = self.NormalizeLables(self.test_W0_predicted_label,category = 3,train_counter = current_train_counter)
+
+        self.getScore("test_score_W0",self.label_test,normalized_predicted_label,score_type)
+    
 
         #initialize current_label_train and current_normalized_predicted_label_train, will change after each iteration
         current_data_train = self.data_train
@@ -377,30 +436,30 @@ class OptimizeW():
             #_________________train right data to see result
             if(current_train_counter == 0):
                 #print("self.data_train_right_datas[0] {}".format(self.data_train_right_datas[0]))
-                self.rightdata_W1_predicted_labels = np.array([self.som.predict(self.data_train_right_datas[0],self.som.weights1,train_counter = current_train_counter)], dtype=object)
+                self.rightdata_W0_predicted_labels = np.array([self.som.predict(self.data_train_right_datas[0],self.som.weights1,train_counter = current_train_counter)], dtype=object)
                
             else:
-              # print("self.rightdata_W1_predicted_labels {}".format(self.rightdata_W1_predicted_labels))
+              # print("self.rightdata_W0_predicted_labels {}".format(self.rightdata_W0_predicted_labels))
                #print("self.som.predict(self.data_train_right_datas[0],self.som.weights1) {}".format(self.som.predict(self.data_train_right_datas[0],self.som.weights1)))
                #print("self.data_train_right_datas {}".format(self.data_train_right_datas))
                #print("self.data_train_right_datas[current_train_counter] {}".format(self.data_train_right_datas[current_train_counter]))
                #**** as label data is each element is one dimisision , so conbineTwoRaggedArray do not need to use np.array([element]) only use np.array(element) will be OK
                
-               self.rightdata_W1_predicted_labels = self.conbineTwoRaggedArray(self.rightdata_W1_predicted_labels,self.som.predict(self.data_train_right_datas[current_train_counter],self.som.weights3,train_counter = current_train_counter))
-               #print("self.rightdata_W1_predicted_labels2 {}".format(self.rightdata_W1_predicted_labels))
-               #self.rightdata_W1_predicted_labels = np.concatenate((self.rightdata_W1_predicted_labels, self.som.predict(self.data_train_right_datas[current_train_counter],self.som.weights1)))
+               self.rightdata_W0_predicted_labels = self.conbineTwoRaggedArray(self.rightdata_W0_predicted_labels,self.som.predict(self.data_train_right_datas[current_train_counter],self.som.weights3,train_counter = current_train_counter))
+               #print("self.rightdata_W0_predicted_labels2 {}".format(self.rightdata_W0_predicted_labels))
+               #self.rightdata_W0_predicted_labels = np.concatenate((self.rightdata_W0_predicted_labels, self.som.predict(self.data_train_right_datas[current_train_counter],self.som.weights1)))
         
             if(current_train_counter == 0):
-                normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W1_predicted_labels[current_train_counter],category = 1,train_counter = current_train_counter)
+                normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W0_predicted_labels[current_train_counter],category = 1,train_counter = current_train_counter)
             else:
-                # use W3 as W1
-                #print("self.rightdata_W1_predicted_labels[current_train_counter] {}   {}".format(self.rightdata_W1_predicted_labels[current_train_counter],current_train_counter))
-                normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W1_predicted_labels[current_train_counter],category = 1,Wtype = 1,train_counter = current_train_counter)
-            #print("self.rightdata_W1_predicted_labels[current_train_counter]  {}".format(self.rightdata_W1_predicted_labels[current_train_counter]))
+                # use W1 as W0
+                #print("self.rightdata_W0_predicted_labels[current_train_counter] {}   {}".format(self.rightdata_W0_predicted_labels[current_train_counter],current_train_counter))
+                normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W0_predicted_labels[current_train_counter],category = 1,Wtype = 1,train_counter = current_train_counter)
+            #print("self.rightdata_W0_predicted_labels[current_train_counter]  {}".format(self.rightdata_W0_predicted_labels[current_train_counter]))
             #print("self.label_train_right_datas {}".format(self.label_train_right_datas))
-           
-            self.purity_score("right_data_score_W1",self.label_train_right_datas[current_train_counter],normalized_predicted_label_right_data)
-            print("right_data{}_score_W1 {} ".format(current_train_counter,self.right_data_score_W1[current_train_counter]))
+            self.getScore("right_data_score_W0",self.label_train_right_datas[current_train_counter],normalized_predicted_label_right_data,score_type)
+   
+            print("right_data{}_score_W0 {} ".format(current_train_counter,self.right_data_score_W0[current_train_counter]))
             if(current_train_counter == 0):
                 self.data_train_error_datas =  np.array([np.take(current_data_train, reduced_indices_sorted,axis=0)], dtype=object)
                 self.label_train_error_datas =  np.array([np.take(current_label_train, reduced_indices_sorted,axis=0)], dtype=object)
@@ -417,35 +476,37 @@ class OptimizeW():
           
             self.som.fit(self.data_train_error_datas[current_train_counter],2)
             if(current_train_counter == 0):
-                self.train_error_W3_predicted_labels = np.array([self.som.predict(self.data_train_error_datas[0],self.som.weights3,train_counter = current_train_counter)], dtype=object)
+                self.train_error_W1_predicted_labels = np.array([self.som.predict(self.data_train_error_datas[0],self.som.weights3,train_counter = current_train_counter)], dtype=object)
             else:
-               self.train_error_W3_predicted_labels = self.conbineTwoRaggedArray(self.train_error_W3_predicted_labels,self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights3,train_counter = current_train_counter))
-                #self.train_error_W3_predicted_labels =  np.concatenate((self.train_error_W3_predicted_labels,np.array(self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights3))))
+               self.train_error_W1_predicted_labels = self.conbineTwoRaggedArray(self.train_error_W1_predicted_labels,self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights3,train_counter = current_train_counter))
+                #self.train_error_W1_predicted_labels =  np.concatenate((self.train_error_W1_predicted_labels,np.array(self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights3))))
             #get nLabels_errordata_predict         
-            normalized_predicted_label =  self.NormalizeLables(self.train_error_W3_predicted_labels[current_train_counter],category = 2,convert_predict_value_to_true_value =True,Wtype=1,train_counter = current_train_counter)
+            normalized_predicted_label =  self.NormalizeLables(self.train_error_W1_predicted_labels[current_train_counter],category = 2,convert_predict_value_to_true_value =True,Wtype=1,train_counter = current_train_counter)
             #print("normalized_predicted_label sixe {} ".format(len(normalized_predicted_label)))
             #________ update current_normalized_predicted_label_train used in next loop
             current_normalized_predicted_label_train = normalized_predicted_label
            
-            #normalized_predicted_label_all_train = self.NormalizeLables(self.all_train_W1_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
-            #print("normalized_predicted_label W1  {}".format(normalized_predicted_label))
-            self.purity_score("error_data_score_W3",self.label_train_error_datas[current_train_counter],normalized_predicted_label)
-            print("error_data{}_score_W3 {} ".format(current_train_counter,self.error_data_score_W3[current_train_counter]))
+            #normalized_predicted_label_all_train = self.NormalizeLables(self.all_train_W0_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
+            #print("normalized_predicted_label W0  {}".format(normalized_predicted_label))
+            self.getScore("error_data_score_W1",self.label_train_error_datas[current_train_counter],normalized_predicted_label,score_type)
+
+            print("error_data{}_score_W1 {} ".format(current_train_counter,self.error_data_score_W1[current_train_counter]))
             #self.som_weights13_difference[i] = self.som.weights3 - self.som.weights1 #no use
             
             if(current_train_counter == 0):
-                self.train_error_W1_predicted_labels = np.array([self.som.predict(self.data_train_error_datas[0],self.som.weights1,train_counter = current_train_counter)], dtype=object)
+                self.train_error_W0_predicted_labels = np.array([self.som.predict(self.data_train_error_datas[0],self.som.weights1,train_counter = current_train_counter)], dtype=object)
                 
             else:
-                self.train_error_W1_predicted_labels = self.conbineTwoRaggedArray(self.train_error_W1_predicted_labels,self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights1,train_counter = current_train_counter))
-                #self.train_error_W1_predicted_labels = np.concatenate((self.train_error_W1_predicted_labels,self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights1)))
+                self.train_error_W0_predicted_labels = self.conbineTwoRaggedArray(self.train_error_W0_predicted_labels,self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights1,train_counter = current_train_counter))
+                #self.train_error_W0_predicted_labels = np.concatenate((self.train_error_W0_predicted_labels,self.som.predict(self.data_train_error_datas[current_train_counter],self.som.weights1)))
             
-            normalized_predicted_label = self.NormalizeLables(self.train_error_W1_predicted_labels[current_train_counter],category = 2,train_counter = current_train_counter)
+            normalized_predicted_label = self.NormalizeLables(self.train_error_W0_predicted_labels[current_train_counter],category = 2,train_counter = current_train_counter)
            
         
-            #print("normalized_predicted_label W1  {}".format(normalized_predicted_label))
-            self.purity_score("error_data_score_W1",self.label_train_error_datas[current_train_counter],normalized_predicted_label)
-            print("error_data{}_score_W1 {}".format(current_train_counter,self.error_data_score_W1[current_train_counter]))
+            #print("normalized_predicted_label W0  {}".format(normalized_predicted_label))
+            self.getScore("error_data_score_W0",self.label_train_error_datas[current_train_counter],normalized_predicted_label,score_type)
+
+            print("error_data{}_score_W0 {}".format(current_train_counter,self.error_data_score_W0[current_train_counter]))
 
             #______________________combinedweights
             if(current_train_counter == 0):
@@ -463,16 +524,17 @@ class OptimizeW():
             
             
             normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W_Combine_predicted_labels[current_train_counter],category = 1,Wtype = 2,train_counter = current_train_counter)
-            self.purity_score("right_data_score_W_combine",self.label_train_right_datas[current_train_counter],normalized_predicted_label_right_data)
-            print("right_data{}_score_W_combnie {} ".format(current_train_counter,self.right_data_score_W_combine[current_train_counter]))
+            self.getScore("right_data_score_W_combine",self.label_train_right_datas[current_train_counter],normalized_predicted_label_right_data,score_type)
+ 
+            print("right_data{}_score_score_W\ {} ".format(current_train_counter,self.right_data_score_W_combine[current_train_counter]))
                         #_________ update current_data_train and current_label_train
             
             current_data_train =  self.data_train_error_datas[current_train_counter]
             current_label_train = self.label_train_error_datas[current_train_counter]
 
             #self.NormalizeLables(current_label_train,category = 0,convert_predict_value_to_true_value =True,Wtype=1,train_counter = current_train_counter)
-            #normalized_predicted_label =  self.NormalizeLables(self.train_error_W3_predicted_labels[current_train_counter],category = 2,convert_predict_value_to_true_value =True,Wtype=1,train_counter = current_train_counter)
-            #current_normalized_predicted_label_train = self.NormalizeLables(self.all_train_W1_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
+            #normalized_predicted_label =  self.NormalizeLables(self.train_error_W1_predicted_labels[current_train_counter],category = 2,convert_predict_value_to_true_value =True,Wtype=1,train_counter = current_train_counter)
+            #current_normalized_predicted_label_train = self.NormalizeLables(self.all_train_W0_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
             #print("current_data_train sgaoe {}".format(current_data_train.shape))
             #print("current_label_train sgaoe {}".format(current_label_train.shape))
             #print("current_train_counter {} self.combinedweight shape {}".format(current_train_counter,self.combinedweight.shape))
@@ -485,20 +547,21 @@ class OptimizeW():
         #print("combinedweight shape2 : {}".format( self.combinedweight.shape))
         self.all_train_W_combined_predicted_label = self.som.predict(self.data_train,self.combinedweight,combined = True,train_counter = current_train_counter)    
         normalized_predicted_label = self.NormalizeLables(self.all_train_W_combined_predicted_label,category = 0, Wtype= 2,train_counter = current_train_counter )
-        self.purity_score("all_train_score_W_Combined",self.label_train,normalized_predicted_label)         
-        
+    
+        self.getScore("all_train_score_W_Combined",self.label_train,normalized_predicted_label,score_type)        
         #______________________ test data               
   
         self.test_W_combined_predicted_label = self.som.predict(self.data_test,self.combinedweight,combined= True,train_counter = current_train_counter)
 
         normalized_predicted_label = self.NormalizeLables(self.test_W_combined_predicted_label,category = 3,Wtype=2,train_counter = current_train_counter)
-        self.purity_score("test_score_W_combined",self.label_test,normalized_predicted_label)
 
-        print("all_train_score_W1: {}".format( self.all_train_score_W1 ))
-        print("all_train_score_W_combine: {}".format(self.all_train_score_W_Combined))
+        self.getScore("test_score_W_combined",self.label_test,normalized_predicted_label,score_type)
+        
+        print("all_train_score_W0: {}".format( self.all_train_score_W0 ))
+        print("all_train_score_W\: {}".format(self.all_train_score_W_Combined))
                      
-        print("test_score_W1 : {}".format( self.test_score_W1))
-        print("test_score_W_combine: {}".format( self.test_score_W_combined))
+        print("test_score_W0 : {}".format( self.test_score_W0))
+        print("test_score_W\: {}".format( self.test_score_W_combined))
         
 
 
