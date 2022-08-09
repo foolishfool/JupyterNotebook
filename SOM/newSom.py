@@ -5,9 +5,10 @@ similar to clustering method in sklearn.
 Created: 1-27-21
 """
 import copy
+import math
 import numpy as np
 from mayavi import mlab
-
+from scipy import spatial
 class SOM():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
@@ -40,7 +41,7 @@ class SOM():
         """
         # Initialize descriptive features of SOM
  
-
+        self.currentWIndex = 0
         self.m =m
         self.n =n
         self.dim =dim
@@ -59,9 +60,8 @@ class SOM():
 
         self.weights= rng.normal(size=(m * n, dim))
         #print("initila self.weigts {}".format(self.weights))
+        self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
-        self.weights2= rng.normal(size=(m * n, dim))
-        self.weights3= rng.normal(size=(m * n, dim))
         self._locations = self._get_locations(m, n)
          
         #print(self.weights)
@@ -104,6 +104,42 @@ class SOM():
         #print(np.argmin(distance))
         # Find index of best matching unit
         return np.argmin(distance)
+
+
+    def _find_bmu_among_multipleW(self,x, Train_Split_Data, Weights):
+        """
+        Find the index of the best matching unit for the input vector x.
+        """  
+        #initial distance
+
+        distance = math.dist(x,Train_Split_Data[0][0])
+        w_index = 0
+        #print("initial distance {}".format(distance)) 
+        #print("len(Train_Split_Data) {}".format(len(Train_Split_Data))) 
+        for i in range(0,len(Train_Split_Data)):
+            tree = spatial.KDTree(Train_Split_Data[i])
+            #print("i {}".format(i)) 
+            #print("Train_Split_Data[i] {}".format(Train_Split_Data[i])) 
+            currentdistance = tree.query(x)[0]
+            nearestDataindex = tree.query(x)[1]
+            #print("nearestDataindex {}".format(nearestDataindex)) 
+       
+            if currentdistance < distance:
+               # print("currentdistance {} distance {}".format(currentdistance,distance)) 
+                distance = currentdistance
+                w_index = i
+                #print("currentdistance {}  i {} distance {} ".format(currentdistance, i, distance ))
+                 
+        # Stack x to have one row per weight *********** get the all the element for one row
+        #print("w_index {} distance {}".format(w_index,distance) )
+        x_stack = np.stack([x]*(self.m*self.n), axis=0)
+          #, axis =1  process by row
+        distance = np.linalg.norm((x_stack - Weights[w_index]).astype(float), axis=1)
+        #print("distance:{}".format(distance ))   
+       # print("min distance:")   
+        #print(np.argmin(distance))
+        # Find index of best matching unit and belonged w index
+        return w_index, np.argmin(distance)
 
 
     def step(self,x):
@@ -216,8 +252,6 @@ class SOM():
                 input = X[idx]
                 #if (type(input) is np.float64):
                 #    input = [input]
-                    #print("111111111111111" )
-                    #print(input )
                 # Do one step of training
                 self.step(input)
                 # Update learning rate
@@ -235,17 +269,11 @@ class SOM():
     # Set trained flag
         self.trained = True
         if(weightIndex == 0):
-            self.weights1 = copy.deepcopy(self.weights)
-            #print("generate weight1:\n {}".format(self.weights1))
-            #mlab.surf(self.weights1)
-            #mlab.show() 
+            self.weights0 = copy.deepcopy(self.weights)
 
         if(weightIndex == 1):
-            self.weights2 = copy.deepcopy(self.weights)
-            #print("generate weight2:\n {}".format(self.weights2))
-        if(weightIndex == 2):
-            self.weights3 = copy.deepcopy(self.weights)
-            #print("generate weight3:\n {}".format(self.weights3))
+            self.weights1 = copy.deepcopy(self.weights)
+
         return
   
     def predict(self,X, newWeights, combined= False, train_counter = 0):
@@ -278,6 +306,46 @@ class SOM():
     
         #print("predicted label:\n {}".format(labels))
         return labels
+
+    def predict_among_multipleW(self,X,Train_Split_Data, weights):
+        """
+        Predict cluster for each element in X.
+        Parameters
+        ----------
+        X : ndarray
+            An ndarray of shape (n, self.dim) where n is the number of samples.
+            The data to predict clusters for.
+        Returns
+        -------
+        labels : ndarray
+            An ndarray of shape (n,). The predicted cluster index for each item
+            in X.
+        """
+
+        #print("weights used:\n")
+        #print(newWeights)
+        # Check to make sure SOM has been fit
+        if not self.trained:
+            raise NotImplementedError('SOM object has no predict() method until after calling fit().')
+
+        # Make sure X has proper shape
+        #print("len(X.shape) {}".format(len(X.shape)))
+        assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
+        assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
+        #  def _find_bmu_among_multipleW(self,x, Train_Split_Data, Weights):
+        winWindexlabels = []
+        labels =[]
+        i = 0
+        for x in X:
+            a,b = self._find_bmu_among_multipleW(x,Train_Split_Data,weights)
+            winWindexlabels.append(a)
+            labels.append(b)
+            i = i+1
+
+       # winWindexlabels, labels = np.array([ for x in X])
+        # labels will be always from 0 - m*n-1
+        #print("predicted label:\n {}".format(labels))
+        return np.array(winWindexlabels), np.array(labels)
 
 
     def transform(self, X):
