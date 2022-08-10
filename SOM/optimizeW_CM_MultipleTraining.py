@@ -39,7 +39,7 @@ class OptimizeW():
         self.X = X.sample(n =X.shape[0]) # randomly sample the dataframe to make it more average
         #print("self.X:{}".format(self.X))
         self.classNum = classNum 
-        self.data_tests =  Y
+        self.data_test =  Y
          #[1,2,3,4,5]it means that predicted class 0 is 1 in true lables, 1 is 2 in true
         self.predicted_classNum= int(som.m*som.n)
 
@@ -89,7 +89,7 @@ class OptimizeW():
         data_train = self.X 
         # transfer to numpy array
         data_train = data_train.to_numpy(dtype=np.float64)
-        data_test = self.data_tests.to_numpy(dtype=np.float64)
+        data_test = self.data_test.to_numpy(dtype=np.float64)
         self.label_train = data_train[:,0]
         self.label_test = data_test[:,0]
 
@@ -553,7 +553,7 @@ class OptimizeW():
         print("all_train_score_W\': {}".format(self.all_train_score_W_Combined))
                      
         print("test_score_W0 : {}".format( self.test_score_W0))
-        print("test_score_W\': {}".format( self.test_score_W_combined))
+        print("test_score_W\: {}".format( self.test_score_W_combined))
         
 
 

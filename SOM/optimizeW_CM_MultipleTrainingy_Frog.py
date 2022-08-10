@@ -17,7 +17,7 @@ class OptimizeW():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
     """
-    def __init__(self, som, X, Y,classNum = 2):
+    def __init__(self, som, _initialdatasetsize, Y,classNum = 2):
         """
         Parameters
         ----------
@@ -132,7 +132,8 @@ class OptimizeW():
             self.test_score_W0.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
         if(scorename == "test_score_W_combined" ):
             self.test_score_W_combined.append(np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-    
+
+
     def nmiScore(self,scorename, y_true, y_pred):
         #print(contingency_matrix)
         # return purity 
@@ -172,10 +173,6 @@ class OptimizeW():
             self.test_score_W0.append(adjusted_rand_score(y_true,y_pred))
         if(scorename == "test_score_W_combined" ):
             self.test_score_W_combined.append(adjusted_rand_score(y_true,y_pred))
-
-
-
-
 
     def groupClusterList(self,class_num_predicted,category,predicted_label,train_counter):
             """
@@ -374,6 +371,7 @@ class OptimizeW():
         A = np.array(newlist)
         return A
 
+
     def getScore(self,scorename, y_true, y_pred, scoretype):
         if scoretype == 0:
             self.purity_score(scorename,y_true,y_pred)
@@ -382,8 +380,10 @@ class OptimizeW():
         elif scoretype == 2:
             self.nmiScore(scorename,y_true,y_pred)
 
-
     def runOptimize(self,max_training_time = 20, score_type = 0):
+        """
+        score_type 0 purity 1 numi 2 rai
+        """
         hasNoErroData = False
         firstTraining = True 
         current_train_counter = 0             
@@ -399,9 +399,9 @@ class OptimizeW():
 
         self.test_W0_predicted_label = self.som.predict(self.data_test,self.som.weights1,train_counter = current_train_counter)
         normalized_predicted_label = self.NormalizeLables(self.test_W0_predicted_label,category = 3,train_counter = current_train_counter)
+       
 
         self.getScore("test_score_W0",self.label_test,normalized_predicted_label,score_type)
-    
 
         #initialize current_label_train and current_normalized_predicted_label_train, will change after each iteration
         current_data_train = self.data_train
@@ -457,8 +457,9 @@ class OptimizeW():
                 normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W0_predicted_labels[current_train_counter],category = 1,Wtype = 1,train_counter = current_train_counter)
             #print("self.rightdata_W0_predicted_labels[current_train_counter]  {}".format(self.rightdata_W0_predicted_labels[current_train_counter]))
             #print("self.label_train_right_datas {}".format(self.label_train_right_datas))
+            
             self.getScore("right_data_score_W0",self.label_train_right_datas[current_train_counter],normalized_predicted_label_right_data,score_type)
-   
+           
             print("right_data{}_score_W0 {} ".format(current_train_counter,self.right_data_score_W0[current_train_counter]))
             if(current_train_counter == 0):
                 self.data_train_error_datas =  np.array([np.take(current_data_train, reduced_indices_sorted,axis=0)], dtype=object)
@@ -488,8 +489,9 @@ class OptimizeW():
            
             #normalized_predicted_label_all_train = self.NormalizeLables(self.all_train_W0_predicted_label,category = 0,convert_predict_value_to_true_value =True,train_counter = current_train_counter)
             #print("normalized_predicted_label W0  {}".format(normalized_predicted_label))
+           
             self.getScore("error_data_score_W1",self.label_train_error_datas[current_train_counter],normalized_predicted_label,score_type)
-
+          
             print("error_data{}_score_W1 {} ".format(current_train_counter,self.error_data_score_W1[current_train_counter]))
             #self.som_weights13_difference[i] = self.som.weights3 - self.som.weights1 #no use
             
@@ -524,9 +526,9 @@ class OptimizeW():
             
             
             normalized_predicted_label_right_data =  self.NormalizeLables(self.rightdata_W_Combine_predicted_labels[current_train_counter],category = 1,Wtype = 2,train_counter = current_train_counter)
+            
             self.getScore("right_data_score_W_combine",self.label_train_right_datas[current_train_counter],normalized_predicted_label_right_data,score_type)
- 
-            print("right_data{}_score_score_W\ {} ".format(current_train_counter,self.right_data_score_W_combine[current_train_counter]))
+            print("right_data{}_score_W\' {} ".format(current_train_counter,self.right_data_score_W_combine[current_train_counter]))
                         #_________ update current_data_train and current_label_train
             
             current_data_train =  self.data_train_error_datas[current_train_counter]
@@ -547,18 +549,19 @@ class OptimizeW():
         #print("combinedweight shape2 : {}".format( self.combinedweight.shape))
         self.all_train_W_combined_predicted_label = self.som.predict(self.data_train,self.combinedweight,combined = True,train_counter = current_train_counter)    
         normalized_predicted_label = self.NormalizeLables(self.all_train_W_combined_predicted_label,category = 0, Wtype= 2,train_counter = current_train_counter )
-    
-        self.getScore("all_train_score_W_Combined",self.label_train,normalized_predicted_label,score_type)        
+        self.getScore("all_train_score_W_Combined",self.label_train,normalized_predicted_label,score_type)         
+
         #______________________ test data               
   
         self.test_W_combined_predicted_label = self.som.predict(self.data_test,self.combinedweight,combined= True,train_counter = current_train_counter)
 
         normalized_predicted_label = self.NormalizeLables(self.test_W_combined_predicted_label,category = 3,Wtype=2,train_counter = current_train_counter)
-
-        self.getScore("test_score_W_combined",self.label_test,normalized_predicted_label,score_type)
         
+        self.getScore("test_score_W_combined",self.label_test,normalized_predicted_label,score_type)
+
+
         print("all_train_score_W0: {}".format( self.all_train_score_W0 ))
-        print("all_train_score_W\: {}".format(self.all_train_score_W_Combined))
+        print("all_train_score_W\': {}".format(self.all_train_score_W_Combined))
                      
         print("test_score_W0 : {}".format( self.test_score_W0))
         print("test_score_W\: {}".format( self.test_score_W_combined))
