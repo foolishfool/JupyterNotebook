@@ -36,6 +36,7 @@ class TDSM_SOM():
         nsubLabels : label_true in sub train data 
         keepFeatureColumns: is the columns that needs to keep (choosen as the feature )  if feature n is choosen the input should be n-1, as start from 0: in   def _initializedataset(self, indice = 0, k_num = 2, feature_num =2): self.data_trains[indice]
         """
+        self.W0IsBest = False
         self.som = som
         #print("X:{}".format(X))
         #self.X = X.sample(n =X.shape[0]) # randomly sample the dataframe to make it more average
@@ -418,6 +419,10 @@ class TDSM_SOM():
             if(self.first_error_data_percentage ==0):
                 self.first_error_data_percentage = len(self.error_lists)/len(self.data_train)
                 print("Error Data percentage {}".format(len(self.error_lists)/len(self.data_train)))
+                if(self.first_error_data_percentage ==0):
+                    print("W0 can represent the training data !")
+                    self.W0IsBest = True
+                    return
 
             if(self.error_lists ==[]):
                 hasNoErroData = True
@@ -425,7 +430,8 @@ class TDSM_SOM():
                 self.data_train_right_datas = self.combineTwoRaggedArray(self.data_train_right_datas,current_data_train)
                 # this training has not been finished but current_train_counter already +1, so needs  to reduce back
                 print(" NO Error Data, Finish Training!")
-                current_train_counter = current_train_counter-1
+                self.split_num = current_train_counter
+                print("split_num {}".format(self.split_num))
                 break
                
             if(current_train_counter == max_training_time):
@@ -547,7 +553,7 @@ class TDSM_SOM():
             #print("self.split_train_data size {}".format(len(self.split_train_data)))
 
             current_train_counter = current_train_counter+1
-            print("Finish one training *********\n{}".format(current_train_counter))
+            print("Finish one splitting *********\n{}".format(current_train_counter))
 
        
         for i in range(0, len(self.data_train_right_datas)):
@@ -582,7 +588,6 @@ class TDSM_SOM():
         print("test_score_W0 : {}".format( self.test_score_W0))
         print("test_score_W\': {}".format( self.test_score_W_combined))
         
-
 
 
         
