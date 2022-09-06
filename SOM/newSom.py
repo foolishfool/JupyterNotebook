@@ -3,9 +3,12 @@ Script to implement simple self organizing map using PyTorch, with methods
 similar to clustering method in sklearn.
 @author: Riley Smith
 Created: 1-27-21
+from readline import append_history_file
 """
+from ast import If
 import copy
 import math
+
 import numpy as np
 from mayavi import mlab
 from scipy import spatial
@@ -69,6 +72,8 @@ class SOM():
         self._inertia = None
         self._n_iter_ = None
         self._trained = False
+        #  self.neuron_represent_datas = [[W0_represent],[W1_represent],[W2_represent]]  W0_represent = [[n0 represent data],[n1 represent data],[n2 represent data]]
+        self.neuron_represent_datas = []
 
     def _get_locations(self, m, n):
         """
@@ -81,65 +86,24 @@ class SOM():
         #print("_get_locations( m, n){}".format(np.argwhere(np.ones(shape=(m, n))).astype(np.int64)))
         return np.argwhere(np.ones(shape=(m, n))).astype(np.int64)
 
-    def _find_bmu(self,x, newWeights, combined = False, train_counter = 0):
+    def _find_bmu(self,x, newWeights):
         """
         Find the index of the best matching unit for the input vector x.
         """  
        # print("x:{}".format(x)) 
         # Stack x to have one row per weight *********** get the all the element for one row
-        if(combined== False):
-            x_stack = np.stack([x]*(self.m*self.n), axis=0)
-        else:  
-            x_stack = np.stack([x]*(self.m*self.n* (train_counter +2)), axis=0)
+        # when split_nubmer = 0 corresponds to weight0, split_nubmer n represent Wn
+        x_stack = np.stack([x]*(self.m*self.n), axis=0)
         # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
-        #print("x_stack:{}".format(x_stack ))   #, axis =1  process by row
-        #print("newWeights:{}".format(newWeights ))   #, axis =1  process by row
-        #print("x_stack - newWeights:{}".format(x_stack - newWeights )) 
-        #a = np.array(x_stack - newWeights,dtype=object) 
-        #arr_float64 = a.astype(float)
-          #, axis =1  process by row
         distance = np.linalg.norm((x_stack - newWeights).astype(float), axis=1)
-        #print("distance:{}".format(distance ))   
-       # print("min distance:")   
-        #print(np.argmin(distance))
         # Find index of best matching unit
         return np.argmin(distance)
 
 
-    def _find_bmu_among_multipleW(self,x, Train_Split_Data, Weights):
-        """
-        Find the index of the best matching unit for the input vector x.
-        """  
-        #initial distance
 
-        distance = math.dist(x,Train_Split_Data[0][0])
-        w_index = 0
-        #print("initial distance {}".format(distance)) 
-        #print("len(Train_Split_Data) {}".format(len(Train_Split_Data))) 
-        for i in range(0,len(Train_Split_Data)):
-            tree = spatial.KDTree(Train_Split_Data[i])
-            #print("i {}".format(i)) 
-            #print("Train_Split_Data[i] {}".format(Train_Split_Data[i])) 
-            currentdistance = tree.query(x)[0]
-            nearestDataindex = tree.query(x)[1]
-            #print("nearestDataindex {}".format(nearestDataindex)) 
-       
-            if currentdistance < distance:
-               # print("currentdistance {} distance {}".format(currentdistance,distance)) 
-                distance = currentdistance
-                w_index = i
-                #print("currentdistance {}  i {} distance {} ".format(currentdistance, i, distance ))
-                 
-        # Stack x to have one row per weight *********** get the all the element for one row
-        #print("w_index {} distance {}".format(w_index,distance) )
-        x_stack = np.stack([x]*(self.m*self.n), axis=0)
-          #, axis =1  process by row
-        distance = np.linalg.norm((x_stack - Weights[w_index]).astype(float), axis=1)
-        #print("distance:{}".format(distance ))   
-       # print("min distance:")   
-        #print(np.argmin(distance))
-        # Find index of best matching unit and belonged w index
-        return w_index, np.argmin(distance)
+   
+
+
 
 
     def step(self,x):
@@ -276,7 +240,7 @@ class SOM():
 
         return
   
-    def predict(self,X, newWeights, combined= False, train_counter = 0):
+    def predict(self,X, newWeights):
         """
         Predict cluster for each element in X.
         Parameters
@@ -302,51 +266,10 @@ class SOM():
         assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
         assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
      
-        labels = np.array([self._find_bmu(x,newWeights,combined,train_counter) for x in X])
-    
-        #print("predicted label:\n {}".format(labels))
+        labels = np.array([self._find_bmu(x,newWeights) for x in X])
         return labels
 
-    def predict_among_multipleW(self,X,Train_Split_Data, weights):
-        """
-        Predict cluster for each element in X.
-        Parameters
-        ----------
-        X : ndarray
-            An ndarray of shape (n, self.dim) where n is the number of samples.
-            The data to predict clusters for.
-        Returns
-        -------
-        labels : ndarray
-            An ndarray of shape (n,). The predicted cluster index for each item
-            in X.
-        """
-
-        #print("weights used:\n")
-        #print(newWeights)
-        # Check to make sure SOM has been fit
-        if not self.trained:
-            raise NotImplementedError('SOM object has no predict() method until after calling fit().')
-
-        # Make sure X has proper shape
-        #print("len(X.shape) {}".format(len(X.shape)))
-        assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
-        assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
-        #  def _find_bmu_among_multipleW(self,x, Train_Split_Data, Weights):
-        winWindexlabels = []
-        labels =[]
-        i = 0
-        for x in X:
-            a,b = self._find_bmu_among_multipleW(x,Train_Split_Data,weights)
-            winWindexlabels.append(a)
-            labels.append(b)
-            i = i+1
-
-       # winWindexlabels, labels = np.array([ for x in X])
-        # labels will be always from 0 - m*n-1
-        #print("predicted label:\n {}".format(labels))
-        return np.array(winWindexlabels), np.array(labels)
-
+          
 
     def transform(self, X):
         """
