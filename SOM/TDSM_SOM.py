@@ -381,8 +381,6 @@ class TDSM_SOM():
         return np.array(predict_labels)
 
     def getBestWAmongAllW(self,x,comparedData):
-        if (len(comparedData[0])==0):
-            print("comparedData[0] is []!!!")
         distance = math.dist(x,comparedData[0][0])
         best_W_index = 0
         for i in range(0,len(comparedData)):
@@ -614,10 +612,10 @@ class TDSM_SOM():
             #______________________combinedweights
             if(current_split_number == 0):
                 self.combinedweight =  np.concatenate((self.som.weights0, self.som.weights1), axis=0)
-                print("combinedweight shape 0: {}".format( self.combinedweight.shape))
+                #print("combinedweight shape 0: {}".format( self.combinedweight.shape))
             else:
                 self.combinedweight =  np.concatenate((self.combinedweight, self.som.weights1), axis=0)
-                print("combinedweight shape1 : {}".format( self.combinedweight.shape))
+                #print("combinedweight shape1 : {}".format( self.combinedweight.shape))
 
 
             if(current_split_number == 0):
@@ -671,7 +669,7 @@ class TDSM_SOM():
             test_scores_W_combined.append(self.test_score_W_combined)
             print("all_train_score_W\' split_num : {} {}".format(stop_split_num, self.all_train_score_W_Combined))
                      
-            #print("test_score_W0 : {}".format( self.test_score_W0))
+            print("test_score_W0 : {}".format( self.test_score_W0))
             print("test_score_W\': split_num : {} {}".format(stop_split_num,  self.test_score_W_combined))
         
 
