@@ -12,6 +12,8 @@ import math
 import numpy as np
 from mayavi import mlab
 from scipy import spatial
+
+
 class SOM():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
@@ -93,8 +95,9 @@ class SOM():
        # print("x:{}".format(x)) 
         # Stack x to have one row per weight *********** get the all the element for one row
         # when split_nubmer = 0 corresponds to weight0, split_nubmer n represent Wn
-        x_stack = np.stack([x]*(self.m*self.n), axis=0)
+        x_stack = np.stack([x]*(newWeights.shape[0]), axis=0)
         # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
+        
         distance = np.linalg.norm((x_stack - newWeights).astype(float), axis=1)
         # Find index of best matching unit
         return np.argmin(distance)
@@ -104,7 +107,7 @@ class SOM():
    
 
 
-
+    
 
     def step(self,x):
         """
@@ -158,6 +161,7 @@ class SOM():
         # Find BMU
         bmu_index = self._find_bmu(x,self.weights)
         bmu = self.weights[bmu_index]
+        #print("np.sum(np.square(x - bmu)) {}".format(np.sum(np.square(x - bmu))))
         # Compute sum of squared distance (just euclidean distance) from x to bmu
         return np.sum(np.square(x - bmu))
 
@@ -225,8 +229,9 @@ class SOM():
         # Compute inertia
           
         inertia = np.sum(np.array([float(self._compute_point_intertia(x)) for x in X]))
+        #print("inertia {}".format(inertia))
         self._inertia_ = inertia
-
+    
     # Set n_iter_ attribute
         self._n_iter_ = global_iter_counter
 
@@ -355,3 +360,5 @@ class SOM():
         if self._n_iter_ is None:
             raise AttributeError('SOM does not have n_iter_ attribute until after calling fit()')
         return self._n_iter_
+
+    

@@ -56,13 +56,25 @@ class TDSM_SOM():
     def _initialdatasetsize(self):
 
         # score of right or error data when training with different W, W1 is the W generated in each split by som
-        self.right_data_score_W0  =  []
-        self.right_data_score_W_combine  =  []
-        self.error_data_score_W1 =  []
-        self.error_data_score_W0 =  []
+        self.right_data_score_W0_p  =  []
+        self.right_data_score_W_combine_p  =  []
+        self.error_data_score_W1_p =  []
+        self.error_data_score_W0_p =  []
 
 
+        self.right_data_score_W0_n  =  []
+        self.right_data_score_W_combine_n  =  []
+        self.error_data_score_W1_n =  []
+        self.error_data_score_W0_n =  []
+
+
+        self.right_data_score_W0_a  =  []
+        self.right_data_score_W_combine_a  =  []
+        self.error_data_score_W1_a =  []
+        self.error_data_score_W0_a =  []
         #predicted lables with different W in test or train data
+      
+      
         self.train_W0_predicted_label = []
         self.train_W_combined_predicted_label = []
         self.test_W0_predicted_label =   []
@@ -86,67 +98,67 @@ class TDSM_SOM():
         contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
        
         if(scorename == "all_train_score_W0" ):
-            self.all_train_score_W0 = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            self.all_train_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
         if(scorename == "all_train_score_W_Combined" ):
-            self.all_train_score_W_Combined = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            self.all_train_score_W_Combined_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
 
         if(scorename == "right_data_score_W0" ):
-            self.right_data_score_W0.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+            self.right_data_score_W0_p.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
         if(scorename == "right_data_score_W_combine" ):
-            self.right_data_score_W_combine.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+            self.right_data_score_W_combine_p.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
         if(scorename == "error_data_score_W1" ):
-            self.error_data_score_W1.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+            self.error_data_score_W1_p.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
         if(scorename == "error_data_score_W0" ):
-            self.error_data_score_W0 .append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
+            self.error_data_score_W0_p.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
 
        
         if(scorename == "test_score_W0" ):
-            self.test_score_W0 = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            self.test_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
         if(scorename == "test_score_W_combined" ):
-            self.test_score_W_combined = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)      
+            self.test_score_W_combined_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)      
 
 
     def nmiScore(self,scorename, y_true, y_pred):
 
         if(scorename == "all_train_score_W0" ):
-            self.all_train_score_W0 = normalized_mutual_info_score(y_true,y_pred)
+            self.all_train_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
         if(scorename == "all_train_score_W_Combined" ):
-            self.all_train_score_W_Combined = normalized_mutual_info_score(y_true,y_pred)
+            self.all_train_score_W_Combined_n = normalized_mutual_info_score(y_true,y_pred)
 
         if(scorename == "right_data_score_W0" ):
-            self.right_data_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
+            self.right_data_score_W0_n.append(normalized_mutual_info_score(y_true,y_pred))
         if(scorename == "right_data_score_W_combine" ):
-            self.right_data_score_W_combine.append(normalized_mutual_info_score(y_true,y_pred))
+            self.right_data_score_W_combine_n.append(normalized_mutual_info_score(y_true,y_pred))
         if(scorename == "error_data_score_W1" ):
-            self.error_data_score_W1.append(normalized_mutual_info_score(y_true,y_pred))
+            self.error_data_score_W1_n.append(normalized_mutual_info_score(y_true,y_pred))
         if(scorename == "error_data_score_W0" ):
-            self.error_data_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
+            self.error_data_score_W0_n.append(normalized_mutual_info_score(y_true,y_pred))
      
         if(scorename == "test_score_W0" ):
-            self.test_score_W0 = normalized_mutual_info_score(y_true,y_pred)
+            self.test_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
         if(scorename == "test_score_W_combined" ):
-            self.test_score_W_combined = normalized_mutual_info_score(y_true,y_pred)
+            self.test_score_W_combined_n = normalized_mutual_info_score(y_true,y_pred)
 
     def ariScore(self,scorename, y_true, y_pred):
 
         if(scorename == "all_train_score_W0" ):
-            self.all_train_score_W0 = adjusted_rand_score(y_true,y_pred)
+            self.all_train_score_W0_a = adjusted_rand_score(y_true,y_pred)
         if(scorename == "all_train_score_W_Combined" ):
-            self.all_train_score_W_Combined = adjusted_rand_score(y_true,y_pred)
+            self.all_train_score_W_Combined_a = adjusted_rand_score(y_true,y_pred)
 
         if(scorename == "right_data_score_W0" ):
-            self.right_data_score_W0.append(adjusted_rand_score(y_true,y_pred))
+            self.right_data_score_W0_a.append(adjusted_rand_score(y_true,y_pred))
         if(scorename == "right_data_score_W_combine" ):
-            self.right_data_score_W_combine.append(adjusted_rand_score(y_true,y_pred))
+            self.right_data_score_W_combine_a.append(adjusted_rand_score(y_true,y_pred))
         if(scorename == "error_data_score_W1" ):
-            self.error_data_score_W1.append(adjusted_rand_score(y_true,y_pred))
+            self.error_data_score_W1_a.append(adjusted_rand_score(y_true,y_pred))
         if(scorename == "error_data_score_W0" ):
-            self.error_data_score_W0.append(adjusted_rand_score(y_true,y_pred))
+            self.error_data_score_W0_a.append(adjusted_rand_score(y_true,y_pred))
 
         if(scorename == "test_score_W0" ):
-            self.test_score_W0 = adjusted_rand_score(y_true,y_pred)
+            self.test_score_W0_a = adjusted_rand_score(y_true,y_pred)
         if(scorename == "test_score_W_combined" ):
-            self.test_score_W_combined = adjusted_rand_score(y_true,y_pred)
+            self.test_score_W_combined_a = adjusted_rand_score(y_true,y_pred)
 
     def get_indices_in_clusters(self,class_num_predicted,category,predicted_label,split_number):
             
@@ -464,15 +476,13 @@ class TDSM_SOM():
         return A
 
 
-    def getScore(self,scorename, y_true, y_pred, scoretype):
-        if scoretype == 0:
-            self.purity_score(scorename,y_true,y_pred)
-        elif scoretype == 1:
-            self.nmiScore(scorename,y_true,y_pred)
-        elif scoretype == 2:
-            self.ariScore(scorename,y_true,y_pred)
+    def getScore(self,scorename, y_true, y_pred):
 
-    def run(self,score_type = 0):
+        self.purity_score(scorename,y_true,y_pred)
+        self.nmiScore(scorename,y_true,y_pred)
+        self.ariScore(scorename,y_true,y_pred)
+
+    def run(self):
         """
         score_type 0 purity 1 numi 2 rai
         """
@@ -490,11 +500,11 @@ class TDSM_SOM():
         
      
 
-        self.getScore("all_train_score_W0",self.label_train,transferred_predicted_label_all_train,score_type)
+        self.getScore("all_train_score_W0",self.label_train,transferred_predicted_label_all_train)
 
         self.test_W0_predicted_label = self.som.predict(self.data_test,self.som.weights0)   
         transferred_predicted_label_test_W0 = self.transferClusterLabelToClassLabel(3,self.test_W0_predicted_label,split_number=current_split_number)                                    
-        self.getScore("test_score_W0",self.test_label,transferred_predicted_label_test_W0,score_type)
+        self.getScore("test_score_W0",self.test_label,transferred_predicted_label_test_W0)
 
         #initialize
         current_data_train = self.data_train
@@ -504,14 +514,14 @@ class TDSM_SOM():
 
         while(hasNoErorData != True):
             self.error_lists = self.getErrorDataIndicesFromPredictedLabels(current_label_train,current_transferred_predicted_label)
-            #**** when self.error_lists==0 means come to the last rounas as generate self.error_rates[n] first and then n+1 so when comes to self.error_lists==0 , no need to add , otgerwise will have  self.error_rates[n+1] with split_num = n
+            #**** when self.error_lists==0 means come to the last rounas as generate self.error_rates[n] first and then n+1 so when comes to self.error_lists==0 , no need to add , otherwise will have  self.error_rates[n+1] with split_num = n
             if(self.error_lists!=[]):
                 self.error_rates.append(len(self.error_lists)/len(self.data_train)) 
             
             if current_split_number == 0:
                 if len(self.error_lists) == 0:
                     print("W0 can represent the training data, no need to split!")
-                    return
+                    break
             else:
                 if(self.error_lists ==[]):
                     hasNoErorData = True
@@ -521,7 +531,7 @@ class TDSM_SOM():
                     print(" NO Error Data, Finish Training!")
                     # *** split_num is the same with self.right_datas[split_num], in the last state right_datas size has increased so although is not training , but the split number is used 
                     #*** so current_split_number do not need to recuduce 1
-                    self.split_num = current_split_number-1 
+                    self.split_num = current_split_number 
                     print("total split_number {}".format(self.split_num))
                     break
                
@@ -558,9 +568,11 @@ class TDSM_SOM():
             self.get_indices_in_clusters(self.predicted_classNum,1,self.rightdata_W0_predicted_labels[current_split_number],current_split_number)
             self.find_empty_neurons_ineachW()
             
-            self.getScore("right_data_score_W0",self.right_data_labels[current_split_number],transferred_predicted_label_right_data,score_type)
+            self.getScore("right_data_score_W0",self.right_data_labels[current_split_number],transferred_predicted_label_right_data)
            
-           
+            print("right_data{}_score_W0 purity {} ".format(current_split_number,self.right_data_score_W0_p[current_split_number]))
+            print("right_data{}_score_W0 nmi {} ".format(current_split_number,self.right_data_score_W0_n[current_split_number]))
+            print("right_data{}_score_W0 api {} ".format(current_split_number,self.right_data_score_W0_a[current_split_number]))
             
             if(current_split_number == 0):
                 self.data_train_error_datas =  np.array([np.take(current_data_train, reduced_indices_sorted,axis=0)], dtype=object)
@@ -591,8 +603,10 @@ class TDSM_SOM():
            
            
     
-            self.getScore("error_data_score_W1",self.error_data_labels[current_split_number],transferred_predicted_label_error_data,score_type)
-            print("error_data{}_score_W1 {} ".format(current_split_number,self.error_data_score_W1[current_split_number]))
+            self.getScore("error_data_score_W1",self.error_data_labels[current_split_number],transferred_predicted_label_error_data)
+            print("error_data{}_score_W1 purity {} ".format(current_split_number,self.error_data_score_W1_p[current_split_number]))
+            print("error_data{}_score_W1 nmi {} ".format(current_split_number,self.error_data_score_W1_n[current_split_number]))
+            print("error_data{}_score_W1 api {} ".format(current_split_number,self.error_data_score_W1_a[current_split_number]))
             
             if(current_split_number == 0):
                 self.train_error_W0_predicted_labels = np.array([self.som.predict(self.data_train_error_datas[0],self.som.weights0)], dtype=object)
@@ -602,13 +616,18 @@ class TDSM_SOM():
             
             transferred_predicted_label_error_data_W0 = self.transferClusterLabelToClassLabel(2,self.train_error_W0_predicted_labels[current_split_number],split_number=current_split_number)                   
 
-            self.getScore("error_data_score_W0",self.error_data_labels[current_split_number],transferred_predicted_label_error_data_W0,score_type)
+            self.getScore("error_data_score_W0",self.error_data_labels[current_split_number],transferred_predicted_label_error_data_W0)
 
-            print("error_data{}_score_W0 {}".format(current_split_number,self.error_data_score_W0[current_split_number]))
+            print("error_data{}_score_W0 purity {}".format(current_split_number,self.error_data_score_W0_p[current_split_number]))
+            print("error_data{}_score_W0 nmi {}".format(current_split_number,self.error_data_score_W0_n[current_split_number]))
+            print("error_data{}_score_W0 api {}".format(current_split_number,self.error_data_score_W0_a[current_split_number]))
 
-            if(self.error_data_score_W0[current_split_number] == 1):
-                print("Error data can be represented by W0 {}".format(current_split_number))
-
+            if(self.error_data_score_W0_p[current_split_number] == 1):
+                print("Error data can be represented by W0 purity {}".format(current_split_number))
+            if(self.error_data_score_W0_n[current_split_number] == 1):
+                print("Error data can be represented by W0 nmi {}".format(current_split_number))
+            if(self.error_data_score_W0_a[current_split_number] == 1):
+                print("Error data can be represented by W0 api {}".format(current_split_number))
             #______________________combinedweights
             if(current_split_number == 0):
                 self.combinedweight =  np.concatenate((self.som.weights0, self.som.weights1), axis=0)
@@ -625,8 +644,10 @@ class TDSM_SOM():
             
             
             transferred_predicted_label_right_data_W_combined = self.transferClusterLabelToClassLabel(1,self.rightdata_W_Combine_predicted_labels[current_split_number],Wtype = 2,split_number=current_split_number)   
-            self.getScore("right_data_score_W_combine",self.right_data_labels[current_split_number],transferred_predicted_label_right_data_W_combined,score_type)
-            print("right_data{}_score_W\' {} ".format(current_split_number,self.right_data_score_W_combine[current_split_number]))
+            self.getScore("right_data_score_W_combine",self.right_data_labels[current_split_number],transferred_predicted_label_right_data_W_combined)
+            print("right_data{}_score_W\' purity {} ".format(current_split_number,self.right_data_score_W_combine_p[current_split_number]))
+            print("right_data{}_score_W\' nmi {} ".format(current_split_number,self.right_data_score_W_combine_n[current_split_number]))
+            print("right_data{}_score_W\' api {} ".format(current_split_number,self.right_data_score_W_combine_a[current_split_number]))
                         #_________ update current_data_train and current_label_train
             
             print("Finish one round splitting {} *********\n".format(current_split_number))
@@ -640,12 +661,20 @@ class TDSM_SOM():
     
 
         unit_list = []
-        all_train_scores_W_Combined = []
-        test_scores_W_combined = []
-        all_train_scores_W0 = []
-        test_scores_W0 = []
+        all_train_scores_W_Combined_p = []
+        test_scores_W_combined_p = []
+        all_train_scores_W0_p = []
+        test_scores_W0_p = []
 
+        all_train_scores_W_Combined_n = []
+        test_scores_W_combined_n = []
+        all_train_scores_W0_n = []
+        test_scores_W0_n = []
 
+        all_train_scores_W_Combined_a = []
+        test_scores_W_combined_a = []
+        all_train_scores_W0_a = []
+        test_scores_W0_a = []
 
         for stop_split_num in range(0, self.split_num+1):
             unit_list.append(stop_split_num)
@@ -655,7 +684,7 @@ class TDSM_SOM():
             self.train_W_combined_predicted_label = self.predict_among_multipleW(self.data_train,stop_split_num,self.right_datas,self.weights)    
            
             transferred_predicted_label_train_WCombine = self.transferClusterLabelToClassLabel(0,self.train_W_combined_predicted_label,Wtype = 2,split_number=stop_split_num)   
-            self.getScore("all_train_score_W_Combined",self.label_train,transferred_predicted_label_train_WCombine,score_type)         
+            self.getScore("all_train_score_W_Combined",self.label_train,transferred_predicted_label_train_WCombine)         
 
         #______________________ test data               
             #self.test_W_combined_predicted_label = self.predict_among_nearestW_representedData(self.data_test,stop_split_num,self.weights)   
@@ -663,34 +692,68 @@ class TDSM_SOM():
 
 
             transferred_predicted_label_test = self.transferClusterLabelToClassLabel(3,self.test_W_combined_predicted_label,Wtype = 2,split_number=stop_split_num)   
-            self.getScore("test_score_W_combined",self.test_label,transferred_predicted_label_test,score_type)
+            self.getScore("test_score_W_combined",self.test_label,transferred_predicted_label_test)
 
-            all_train_scores_W_Combined.append(self.all_train_score_W_Combined)
-            test_scores_W_combined.append(self.test_score_W_combined)
-            print("all_train_score_W\' split_num : {} {}".format(stop_split_num, self.all_train_score_W_Combined))
+            all_train_scores_W_Combined_p.append(self.all_train_score_W_Combined_p)
+            test_scores_W_combined_p.append(self.test_score_W_combined_p)
+
+            all_train_scores_W_Combined_n.append(self.all_train_score_W_Combined_n)
+            test_scores_W_combined_n.append(self.test_score_W_combined_n)
+
+            all_train_scores_W_Combined_a.append(self.all_train_score_W_Combined_a)
+            test_scores_W_combined_a.append(self.test_score_W_combined_a)
+            
+            print("all_train_score_W\' purity split_num : {} {}".format(stop_split_num, self.all_train_score_W_Combined_p))
+            print("all_train_score_W\' nmi split_num : {} {}".format(stop_split_num, self.all_train_score_W_Combined_n))
+            print("all_train_score_W\' ari split_num : {} {}".format(stop_split_num, self.all_train_score_W_Combined_a))
                      
-            print("test_score_W0 : {}".format( self.test_score_W0))
-            print("test_score_W\': split_num : {} {}".format(stop_split_num,  self.test_score_W_combined))
+            print("test_score_W0 purity: {}".format( self.test_score_W0_p))
+            print("test_score_W0 nmi: {}".format( self.test_score_W0_n))
+            print("test_score_W0 api: {}".format( self.test_score_W0_a))
+            print("test_score_W\': purity split_num : {} {}".format(stop_split_num,  self.test_score_W_combined_p))
+            print("test_score_W\': nmi split_num : {} {}".format(stop_split_num,  self.test_score_W_combined_n))
+            print("test_score_W\': ari split_num : {} {}".format(stop_split_num,  self.test_score_W_combined_a))
         
 
-            all_train_scores_W0.append(self.all_train_score_W0)
-            test_scores_W0.append(self.test_score_W0)
+            all_train_scores_W0_p.append(self.all_train_score_W0_p)
+            test_scores_W0_p.append(self.test_score_W0_p)
+            all_train_scores_W0_n.append(self.all_train_score_W0_n)
+            test_scores_W0_n.append(self.test_score_W0_n)
+            all_train_scores_W0_a.append(self.all_train_score_W0_a)
+            test_scores_W0_a.append(self.test_score_W0_a)
 
-        if score_type == 0:
-            plt.title("Purity Score")   
-        elif score_type == 1:
-            plt.title("NMI Score")
-        elif score_type == 2:
-            plt.title("ARI Score") 
+        #get last split result
+        self.all_train_scores_W_Combined_last_p = all_train_scores_W_Combined_p[len(all_train_scores_W_Combined_p)-1]
+        self.all_train_scores_W_Combined_last_n = all_train_scores_W_Combined_n[len(all_train_scores_W_Combined_n)-1]
+        self.all_train_scores_W_Combined_last_a = all_train_scores_W_Combined_a[len(all_train_scores_W_Combined_a)-1]
+        
+        print("all_train_scores_W_Combined_last_p {}".format(self.all_train_scores_W_Combined_last_p))
+        print("all_train_scores_W_Combined_last_n {}".format(self.all_train_scores_W_Combined_last_n))
+        print("all_train_scores_W_Combined_last_a {}".format(self.all_train_scores_W_Combined_last_a))
 
-        plt.xlabel('Split Number')
-        plt.plot(unit_list,self.error_rates,'g',label ='error data percentage')
-        plt.plot(unit_list,all_train_scores_W_Combined,'c',label ='all_train_score_W\'')
-        plt.plot(unit_list,test_scores_W_combined,'k',label ='test_score_W\'')
-        plt.plot(unit_list,all_train_scores_W0,'r',label ='all_train_score_W0')
-        plt.plot(unit_list,test_scores_W0,'y',label ='test_score_W0')
-        plt.legend()
-        plt.show()          
+
+        self.test_scores_W_Combined_last_p = test_scores_W_combined_p[len(test_scores_W_combined_p)-1]
+        self.test_scores_W_Combined_last_n = test_scores_W_combined_n[len(test_scores_W_combined_n)-1]
+        self.test_scores_W_Combined_last_a = test_scores_W_combined_a[len(test_scores_W_combined_a)-1]
+
+        print("test_scores_W_Combined_last_p {}".format(self.test_scores_W_Combined_last_p))
+        print("test_scores_W_Combined_last_n {}".format(self.test_scores_W_Combined_last_n))
+        print("test_scores_W_Combined_last_a {}".format(self.test_scores_W_Combined_last_a))
+        #if score_type == 0:
+        #    plt.title("Purity Score")   
+        #elif score_type == 1:
+        #    plt.title("NMI Score")
+        #elif score_type == 2:
+        #    plt.title("ARI Score") 
+#
+        #plt.xlabel('Split Number')
+        #plt.plot(unit_list,self.error_rates,'g',label ='error data percentage')
+        #plt.plot(unit_list,all_train_scores_W_Combined,'c',label ='all_train_score_W\'')
+        #plt.plot(unit_list,test_scores_W_combined,'k',label ='test_score_W\'')
+        #plt.plot(unit_list,all_train_scores_W0,'r',label ='all_train_score_W0')
+        #plt.plot(unit_list,test_scores_W0,'y',label ='test_score_W0')
+        #plt.legend()
+        #plt.show()          
         
 
 
