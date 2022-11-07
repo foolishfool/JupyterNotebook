@@ -320,8 +320,29 @@ class SOM():
 
         # Return predictions
         return self.predict(X)
-        
 
+
+    def map_vects(self, input_vects,newweights):
+        """
+        Maps each input vector to the relevant neuron in the SOM
+        grid.
+        'input_vects' should be an iterable of 1-D NumPy arrays with
+        dimensionality as provided during initialization of this SOM.
+        Returns a list of 1-D NumPy arrays containing (row, column)
+        info for each input vector(in the same order), corresponding
+        to mapped neuron.
+        """
+
+        to_return = []
+        for vect in input_vects:
+            min_index = min([i for i in range(len(newweights))],
+                            key=lambda x: np.linalg.norm(vect-
+                                                         newweights[x]))
+            to_return.append(self._locations[min_index])
+
+        return to_return
+
+        
     def fit_transform(self, X, **kwargs):
         """
         Convenience method for calling fit(X) followed by transform(X). Unlike

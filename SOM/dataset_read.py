@@ -12,6 +12,7 @@ Created: 1-27-21
 """
 
 import numpy as np
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 class DATAREAD():
     def __init__(self):
@@ -234,18 +235,27 @@ class DATAREAD():
     def initializedataset(self,X,Y,attributute):
          self.X = X.sample(n =X.shape[0])
          self.data_test =  Y
+         
          data_train = self.X 
          data_test =  self.data_test
+
          label_train = data_train[attributute]
          label_test = data_test[attributute]
          data_train = data_train.drop(attributute,axis = 1)
          data_test = data_test.drop(attributute,axis = 1)
-
+         
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)
          self.data_test = data_test.to_numpy(dtype=np.float64)
          self.label_train = label_train.to_numpy(dtype=np.float64)
          self.label_test = label_test.to_numpy(dtype=np.float64)
+
+         scaler = StandardScaler().fit(self.data_train)
+         self.data_train = scaler.transform(self.data_train)
+         scaler2 = StandardScaler().fit(self.data_test)
+         self.data_test = scaler2.transform(self.data_test)
+
+
 
     def initializedataset_frog(self,X,Y):
          self.X = X.sample(n =X.shape[0])

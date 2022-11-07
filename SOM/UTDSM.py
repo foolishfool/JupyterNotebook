@@ -5,18 +5,23 @@ similar to clustering method in sklearn.
 Created: 1-27-21
 """
 from asyncio.windows_events import NULL
+from distutils.errors import DistutilsArgError
 from enum import Flag
 #from curses.ascii import NULL
 from importlib import resources
 from pickle import TRUE
 from telnetlib import PRAGMA_HEARTBEAT
+import turtle
 from zlib import DEF_BUF_SIZE
 from sklearn import metrics
 from scipy import spatial
 import numpy as np
+from numpy import array
 import random
 import copy
 import math
+import operator
+import collections
 import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.metrics.cluster import normalized_mutual_info_score
@@ -51,235 +56,137 @@ class UTDSM_SOM():
 
         self.data_train = data_train
         self.data_test = data_test
-        self.label_train = label_train
+        self.train_label = label_train
+        self.train_label = self.train_label.astype(int)
+       # print(self.train_label)
         self.test_label = label_test
-        self.combinedweight = som.weights0
 
-
-
-        self.rightdatas = []
-        self.rightWs = []
-     
-
-
-    def _initialdatasetsize(self):
-
-        # score of right or error data when training with different W, W1 is the W generated in each split by som
-        self.right_data_score_W0  =  []
-        self.right_data_score_W_combine  =  []
-        self.error_data_score_W1 =  []
-        self.error_data_score_W0 =  []
-
-
-        #predicted lables with different W in test or train data
-        self.train_W0_predicted_label = []
-        self.train_W_combined_predicted_label = []
-        self.test_W0_predicted_label =   []
-        self.test_W_combined_predicted_label =  []
-
-        #all the error rate for each split
-        self.error_rates =   []
-        self.weights =   []
-
-       
-        # The training data that each neuron can represent in each W
-        # self.neuron_represent_datas =[[split_data0],[split_data1],[split_data2]]
-        # split_datai = [[data that n0 represents],[data that n1 represents],[data that n2 represents]]
-        # data that ni representst = [[[index1,index2],[],[index3]],[[index5,index6][index7,index8][]],[[index9,index10][][]]]
-        self.neuron_represent_datas = []
+        self.all_split_datas = []
+        self.all_split_datas_indexes = []
+        
 
 
 
     def purity_score(self,scorename, y_true, y_pred):
         # compute contingency matrix (also called confusion matrix)
         contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
-       
+        #print(" purity_score y_true{}  y_pred {} ".format(y_true,y_pred))
         if(scorename == "all_train_score_W0" ):
-            self.all_train_score_W0 = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            #print(1111111111111)
+            self.all_train_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            #print("all_train_score_W0_p {}".format(self.all_train_score_W0_p ))
         if(scorename == "all_train_score_W_Combined" ):
-            self.all_train_score_W_Combined = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
-
-        if(scorename == "right_data_score_W0" ):
-            self.right_data_score_W0.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scorename == "right_data_score_W_combine" ):
-            self.right_data_score_W_combine.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scorename == "error_data_score_W1" ):
-            self.error_data_score_W1.append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-        if(scorename == "error_data_score_W0" ):
-            self.error_data_score_W0 .append( np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix))
-
-       
+            self.all_train_score_W_Combined_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+           # print("all_train_score_W_Combined_p {}".format(self.all_train_score_W_Combined_p ))
         if(scorename == "test_score_W0" ):
-            self.test_score_W0 = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            self.test_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+          #  print("test_score_W0_p{}".format(self.test_score_W0_p ))
         if(scorename == "test_score_W_combined" ):
-            self.test_score_W_combined = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)      
-
+            self.test_score_W_Combined_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix) 
+           # print("test_score_W_combined_p{}".format(self.test_score_W_combined_p ))     
+        if(scorename == "rest_score_W0" ):  
+            self.rest_data_W0_p  = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix) 
+            print("self.rest_data_W0_p {}".format(self.rest_data_W0_p))
 
     def nmiScore(self,scorename, y_true, y_pred):
-
+        #print(" nmi y_true{}  y_pred {} ".format(y_true,y_pred))
         if(scorename == "all_train_score_W0" ):
-            self.all_train_score_W0 = normalized_mutual_info_score(y_true,y_pred)
+            self.all_train_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
+            print("all_train_score_W0_n {}".format(self.all_train_score_W0_n ))  
         if(scorename == "all_train_score_W_Combined" ):
-            self.all_train_score_W_Combined = normalized_mutual_info_score(y_true,y_pred)
-
-        if(scorename == "right_data_score_W0" ):
-            self.right_data_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
-        if(scorename == "right_data_score_W_combine" ):
-            self.right_data_score_W_combine.append(normalized_mutual_info_score(y_true,y_pred))
-        if(scorename == "error_data_score_W1" ):
-            self.error_data_score_W1.append(normalized_mutual_info_score(y_true,y_pred))
-        if(scorename == "error_data_score_W0" ):
-            self.error_data_score_W0.append(normalized_mutual_info_score(y_true,y_pred))
-     
+            self.all_train_score_W_Combined_n = normalized_mutual_info_score(y_true,y_pred)
+            # if  self.all_train_score_W_Combined_n >= self.all_train_score_W0_n :
+            #     print("all_train_score_W_Combined increased in nmi")
+            print("all_train_score_W_Combined_n {}".format(self.all_train_score_W_Combined_n ))  
         if(scorename == "test_score_W0" ):
-            self.test_score_W0 = normalized_mutual_info_score(y_true,y_pred)
+            self.test_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
+            print("test_score_W0_n {}".format(self.test_score_W0_n ))  
         if(scorename == "test_score_W_combined" ):
-            self.test_score_W_combined = normalized_mutual_info_score(y_true,y_pred)
+            self.test_score_W_Combined_n = normalized_mutual_info_score(y_true,y_pred)
+            # if  self.test_score_W_Combined_n >= self.test_score_W0_n :
+            #     print("test_score_W_Combined increased in nmi")
+            # else: print(-1)
+            print("test_score_W_combined_n {}".format(self.test_score_W_Combined_n ))  
+        if(scorename == "rest_score_W0" ):
+            self.rest_data_W0_n  = normalized_mutual_info_score(y_true,y_pred)
+            print("y_true len {} y_pred {} ".format(len(y_true),len(y_pred)))
+            print("self.rest_data_W0_n {}".format(self.rest_data_W0_n))
+
 
     def ariScore(self,scorename, y_true, y_pred):
-
+       # print(" ariScore y_true{}  y_pred {} ".format(y_true,y_pred))
         if(scorename == "all_train_score_W0" ):
-            self.all_train_score_W0 = adjusted_rand_score(y_true,y_pred)
+            self.all_train_score_W0_a = adjusted_rand_score(y_true,y_pred)
+            print("all_train_score_W0_a {}".format(self.all_train_score_W0_a ))  
         if(scorename == "all_train_score_W_Combined" ):
-            self.all_train_score_W_Combined = adjusted_rand_score(y_true,y_pred)
-
-        if(scorename == "right_data_score_W0" ):
-            self.right_data_score_W0.append(adjusted_rand_score(y_true,y_pred))
-        if(scorename == "right_data_score_W_combine" ):
-            self.right_data_score_W_combine.append(adjusted_rand_score(y_true,y_pred))
-        if(scorename == "error_data_score_W1" ):
-            self.error_data_score_W1.append(adjusted_rand_score(y_true,y_pred))
-        if(scorename == "error_data_score_W0" ):
-            self.error_data_score_W0.append(adjusted_rand_score(y_true,y_pred))
-
+            self.all_train_score_W_Combined_a = adjusted_rand_score(y_true,y_pred)
+            # if  self.all_train_score_W_Combined_a >= self.all_train_score_W0_a :
+            #     print("all_train_score_W_Combined increased in ari")
+            # else: print(-1)
+            print("all_train_score_W_Combined_a {}".format(self.all_train_score_W_Combined_a ))  
         if(scorename == "test_score_W0" ):
-            self.test_score_W0 = adjusted_rand_score(y_true,y_pred)
+            self.test_score_W0_a = adjusted_rand_score(y_true,y_pred)
+            print("test_score_W0_a  {}".format(self.test_score_W0_a ))  
         if(scorename == "test_score_W_combined" ):
-            self.test_score_W_combined = adjusted_rand_score(y_true,y_pred)
+            self.test_score_W_Combined_a = adjusted_rand_score(y_true,y_pred)
+            print("test_score_W_combined_a {}".format(self.test_score_W_Combined_a ))  
+        if(scorename == "rest_score_W0" ): 
+            self.rest_data_W0_a  = adjusted_rand_score(y_true,y_pred)
+            print("y_true len {} y_pred {} ".format(len(y_true),len(y_pred)))
+            print("self.rest_data_W0_a {}".format(self.rest_data_W0_a))
+            # if  self.test_score_W_Combined_a >= self.test_score_W0_a :
+            #     print("test_score_W_Combined increased in ari")
+            # else: print(-1)
 
 
-
-    def get_indices_in_predicted_clusters(self,class_num_predicted,predicted_label,data_to_predict):
+    def get_indices_in_predicted_clusters(self,class_num_predicted,predicted_label,data_predict_indexes):
             
             """
+            class_label is the true class label
+            predicted_label = [1,1,2,3,1,1,2,1]
+            idx start from = to n
+            class_label index also start from 0 to n
             """
-            #print("predicted_label {}".format(predicted_label))
+
+            #print("predicted_label 2{}".format(predicted_label))
+            #print("data_predict_indexes 2{}".format(data_predict_indexes))
             # class labels in each cluster = [[1,1,1,1],[2,2,2,2],[1,1]]]
             clusters_indexes = []
             clusters_datas = []
+            
             for i in range(0,class_num_predicted):
                 newlist = []
                 newdatalist = []
-                for idx, y in enumerate(predicted_label):     
+                for idx, y in enumerate(predicted_label): 
                     # is the cluster label
                     if(y == i):
-                        newlist.append(idx)  
-                        newdatalist.append(data_to_predict[idx])
+                        #print("data_predict_indexes[idx] {}".format(data_predict_indexes[idx]))
+                        newlist.append(data_predict_indexes[idx])  
+                        newdatalist.append(self.data_train[data_predict_indexes[idx]])                        
                 clusters_indexes.append(newlist)
-                clusters_datas.append(newdatalist)
-            # clusters_labels = [[1,2,3,12,24],[0,4,5,6],[9,11]]  indices of data that are grouped in each clusters
-            # clusters_datas = [[data in cluster 0],[data in cluster 1],[data in cluster 2]]
-            j=0
-            print("clusters_indexes  {}".format(clusters_indexes))
-            for x in clusters_indexes:
-                if x != []:
-                    j =j+1
-            if j ==1 :
-                self.NoErrorDataExist = True
-            #print("clusters_indexes {}".format(clusters_indexes))
-            print("clusters_datas size {}".format(len(clusters_datas)))
+                clusters_datas.append(np.array(newdatalist))
+            
+         
             return clusters_indexes,clusters_datas
-      
 
-    def getErrorDataBasedOnErrorRate(self, error_rate,current_train_data):
-        # first needs to make sure each x in current_train_data is not []
-        # error_rate = [0,current_train_data.size]]
-        #print("current_train_data {}".format(current_train_data))
-        #current_iteration_errordata = []
-        #for i in range(0 , len(current_train_data)) :
-        right_data,rightDataW,errordata=self.getErrorDataRightDataInSingleNeurons(error_rate,current_train_data)
-        #print("append right_data  {}".format(right_data))
-        if right_data != []:
-            self.rightdatas.append(right_data)
-            self.rightWs.append(rightDataW)
-        #current_iteration_errordata.append(errordata)
-        #print("errordata size {} errordata {}".format(len(errordata),errordata))
-        return errordata
-
+    # knewo [[2,35,34,3,23],[211,12,2,1]] get [[0,0,1,1] [0,0,1]]
+    def get_mapped_class_in_clusters(self,clusters_indexes):
+        mapped_clases_in_clusters = []
+        for i in range(0, len(clusters_indexes)):
+            mapped_clases_in_clusters.append([])
+        for j in range(0, len(clusters_indexes)):
+            for item in clusters_indexes[j]:
+                mapped_clases_in_clusters[j].append(self.train_label[item])
+        #print("mapped_clases_in_clusters 2{}".format(mapped_clases_in_clusters))
+        # mapped_clases_in_clusters = [[1,2,1,2,1,1],[2,2,2,2],[0,1,0]]
+        return mapped_clases_in_clusters
+    
     def delete_multiple_element(self,list_object, indices):
         indices = sorted(indices, reverse=True)
         for idx in indices:
             if idx < len(list_object):
                 list_object.pop(idx)
 
-
-    def getErrorDataRightDataInSingleNeurons(self,error_rate,current_neuron_data):
-        current_neuron_data = np.array(current_neuron_data)
-        self.som.fit(current_neuron_data,1)
-   
-        current_neuron_data_predicted_label = self.som.predict(current_neuron_data,self.som.weights1)   
-     
-        clustered_indexes,clustered_datas =   self.get_indices_in_predicted_clusters(self.som.weights1.shape[0],current_neuron_data_predicted_label,current_neuron_data)
-        empty_list_indices = []
-        j = 0
-        for i in range(0,len(clustered_datas)):
-            if clustered_datas[i] !=[]:
-                j=j+1
-            else:
-                empty_list_indices.append(i)
-        if j > error_rate:
-            minindex = self.getMinIndex(error_rate,clustered_indexes)
-            reduce_index = minindex + empty_list_indices       
-            rightDataW = np.delete(self.som.weights1,reduce_index,0)
-            rightdata = copy.deepcopy(clustered_datas)
-            self.delete_multiple_element(rightdata, reduce_index)
-           #print("clustered_datas {}".format(clustered_datas))
-            errordata = [clustered_datas[index] for index in minindex ]
-        elif j == error_rate:
-            #no right data 
-            rightDataW = []
-            rightdata =  []
-            errordata = clustered_datas
-        else:
-            maxindex = self.getMaxIndex(error_rate,clustered_indexes)
-            reduce_index = maxindex + empty_list_indices        
-            rightDataW = np.delete(self.som.weights1,reduce_index,0)
-            rightdata =  copy.deepcopy(clustered_datas)
-            self.delete_multiple_element(rightdata, reduce_index)
-            errordata = [ clustered_datas[index] for index in maxindex ]
-        #print("return rightdata {} ".format(rightdata))
-        return rightdata, rightDataW,errordata
-
-    def getMinIndex(self,error_rate,clustered_indexes):
-        #clustered_indexes = [[indices ],[],[]]
-        minIndex = []
-        dataNum_list = [] #dataNum_list = [5,6,2,0] the number is data number in each cluster
-        for x in clustered_indexes:
-            dataNum_list.append(len(x))
-        #print("dataNum_list 1 {} ".format(dataNum_list))
-        max_value = np.max(dataNum_list)
-        reference_value = max_value +1
-        for n in dataNum_list:
-            if n == 0: # n is a empty neurons and make it to be max value, so will never access to the calculation of getting min value
-                dataNum_list[n] = reference_value
-        min_datas_index = []
-        dataNum_list = np.array(dataNum_list)
-       # print("dataNum_list2 {} max_value {}".format(dataNum_list,max_value))
-        for i in range(0,error_rate): 
-            if np.min(dataNum_list) != reference_value:
-                #*** minresult = array([m,n])  m and n is the minum value index in minresult 
-                #*** Get the indices of minimum element in numpy array it return an array of array  array[0] = [m,n] the minimum element indices )
-                minresult = np.where(dataNum_list == np.amin(dataNum_list)) 
-                for j in range(0,len(minresult[0])):
-                    if j not in min_datas_index:
-                        min_datas_index.append(minresult[0][j])
-                        dataNum_list[minresult[0][j]] = max_value
-        #min_datas_index is a sorted list of dataNum_list min_datas_index = [4,5,6,1,0,3]  index of neurons that has data increases from neuron 4 to neuron3
-        #print("min_datas_index {}".format(min_datas_index))
-        for i in range(0,error_rate):           
-            minIndex.append(min_datas_index[i])
-        #minIndex = [4,5] when error_rate = 2
-        return minIndex
 
     def getMaxIndex(self,error_rate,clustered_indexes):
         #clustered_indexes = [[indices ],[],[]]
@@ -313,6 +220,7 @@ class UTDSM_SOM():
          predicted_class_label  = [[1,2,1,1],[3,3,3]]  the value in is the true value in class_label
          it means that predicted cluster 0 is 1 in class lable, cluster label 2 is 3 in class label
         """
+        #print("predicted_class_label_in_each_cluster {}".format(predicted_class_label_in_each_cluster))
         predicted_label_convert_to_class_label = []
         for item in predicted_class_label_in_each_cluster:
             if item != []:
@@ -324,9 +232,11 @@ class UTDSM_SOM():
         
         if Wtype == 0 :
             self.PLabel_to_Tlabel_Mapping_W0 = predicted_label_convert_to_class_label
+            #print("self.PLabel_to_Tlabel_Mapping_W0 {}".format(self.PLabel_to_Tlabel_Mapping_W0 ))
 
         if Wtype == 1 :
             self.PLabel_to_Tlabel_Mapping_WCombined = predicted_label_convert_to_class_label
+            #print("self.PLabel_to_Tlabel_Mapping_WCombined {}".format(self.PLabel_to_Tlabel_Mapping_WCombined ))
 
         if Wtype == 2 :
             self.PLabel_to_Tlabel_Mapping_W1 = predicted_label_convert_to_class_label
@@ -335,16 +245,16 @@ class UTDSM_SOM():
         #print("list{}".format(list))
         #Count number of occurrences of each value in array of non-negative ints.
         counts = np.bincount(list)
-       # print("counts {}".format(counts))
+        #print("counts {}".format(counts))
         #Returns the indices of the maximum values along an axis.
-        #print("most common 1 {}".format(b.most_common(1)))
+        #print("np.argmax(counts) {}".format(np.argmax(counts)))
         return np.argmax(counts)
 
     def convertPredictedLabelValue(self,predicted_cluster_labels, PLable_TLabel_Mapping):
         # PLabel_CLabel_Mapping the mapping of cluster label to class label
         # PLable_TLabel_Mapping size is the som.m*som.n* stop_split_num
-        print("predicted_cluster_labels {}".format(predicted_cluster_labels))
-        print("PLable_TLabel_Mapping {}".format(PLable_TLabel_Mapping))
+        #print("predicted_cluster_labels {}".format(predicted_cluster_labels))
+        #print("PLable_TLabel_Mapping {}".format(PLable_TLabel_Mapping))
         for i in range(0,len(predicted_cluster_labels)):
             predicted_cluster_value =  predicted_cluster_labels[i]
             predicted_cluster_labels[i] = PLable_TLabel_Mapping[predicted_cluster_value]      
@@ -367,12 +277,10 @@ class UTDSM_SOM():
         """      
         if mapping == True:
             predicted_clusters,b = self.get_indices_in_predicted_clusters(predicted_cluster_number,predicted_cluster_labels,data_to_predict)
-            print("predicted_clusters {}".format(predicted_clusters))
-          
-           
+            #print("predicted_clusters {}".format(predicted_clusters)) 
           
             if(Wtype == 0):
-             self.getLabelMapping( predicted_clusters,0)  
+             self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters),0)  
               # the value in predicted_clusters are true label value       
              predicted_class_labels =  self.convertPredictedLabelValue(predicted_cluster_labels,self.PLabel_to_Tlabel_Mapping_W0)
              self.initial_current_traindata = b
@@ -380,7 +288,7 @@ class UTDSM_SOM():
             
             if(Wtype == 1):   
 
-             self.getLabelMapping( predicted_clusters,1)      
+             self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters),1)      
            
              predicted_class_labels =  self.convertPredictedLabelValue(predicted_cluster_labels,self.PLabel_to_Tlabel_Mapping_WCombined)
             
@@ -396,18 +304,79 @@ class UTDSM_SOM():
 
 
 
-    def find_empty_neurons_ineachW(self):
-        self.empty_neurons = [] # index of neurons that do not represent any data   in each weight or split data
-        self.non_empty_neurons = []# index of neurons that can represent some data  
+    #get a dictionary with nodes has decsending distance with cluster center
+    def split_data(self, gargetgroup_index,cluster_center):
+        sorted_data_dict = {}
+       # print("gargetgroup_index {} ".format(gargetgroup_index))
+        for idx in gargetgroup_index:     
+            distance = np.linalg.norm((self.data_train[idx] - cluster_center).astype(float))
+            if distance >0:
+                #print("idx {} distance  {}".format(idx,distance))
+                sorted_data_dict[idx] = distance
+            #if distance == 0:
+              #  print("zero distcance for data 1 idx {}".format(idx))       
+       # print("sorted_dict 1{} ".format(sorted_data_dict))
+        sorted_dict = dict(sorted(sorted_data_dict.items(), key=operator.itemgetter(1),reverse=True))
+        #print("sorted_dict 2{} ".format(sorted_dict))
+        #collections.OrderedDict(sorted(sorted_data_dict.items(), reverse=True, key=lambda t: t[1]))
+        return sorted_dict
 
-        for i in range(0,len(self.neuron_represent_datas)):   # self.neuron_represent_datas is [[[],[]],[[],[]],[[]]]
-            self.empty_neurons.append([])
-            self.non_empty_neurons.append([])
-            for j in range(0,len(self.neuron_represent_datas[i])):
-                if self.neuron_represent_datas[i][j] == []:
-                    self.empty_neurons[i].append(j)
-                else:                  
-                    self.non_empty_neurons[i].append(j)
+    def getfarthest_intra_node_index(self,sorted_dict):
+        #print("sorted_dict {}".format(sorted_dict))
+        find_node = next(iter(sorted_dict))
+
+        #print("find_node {}".format(find_node))
+        return find_node
+
+    def get_allnode_distance_in_a_group(self, target_node,  group_index, group_center):
+        sorted_data_dict = {}
+        distances_intra = {}
+       # print("group_index {}".format(group_index))   
+        for idx in group_index:     
+            distance = np.linalg.norm((self.data_train[idx] - target_node).astype(float))
+            if distance >0 :
+                sorted_data_dict[idx] =distance  
+
+        sorted_dict = dict(sorted(sorted_data_dict.items(), key=operator.itemgetter(1),reverse=False))
+
+        for key in sorted_dict:
+            distance_intra = np.linalg.norm((self.data_train[key] - group_center).astype(float))
+            distances_intra[key] = distance_intra        
+       # print(" distances_intra   {}  ".format(distances_intra))
+        return sorted_dict,distances_intra
+    # get all the inter node that has smaller distance to the target data, then target data to its cluster center 
+    def get_intra_community_nodes(self,sorted_dict, intra_center):
+        community_nodes = []
+        community_nodes_keys = []
+        #print("sorted_dict intro {}".format(sorted_dict))
+        #for key, value in sorted_dict.items():
+        for key in sorted_dict:  
+           # print("key {}".format(key))
+            #**** cannot <= when == is itself, may cause one data one community       
+            distance_intra = np.linalg.norm((self.data_train[key] - intra_center).astype(float))
+            if sorted_dict[key] < distance_intra:
+                #print("sorted_dict[key {} key {} distance_intra{}".format(sorted_dict[key],key,distance_intra ))
+                community_nodes.append(self.data_train[key])
+                #print("key intra {}".format(key))
+                community_nodes_keys.append(key)
+        return community_nodes,community_nodes_keys
+
+
+    def get_inter_community_nodes(self,sorted_dict,distances_intra):
+        community_nodes = []
+        community_nodes_keys = []
+        #print("sorted_dictlenth{}".format(len(sorted_dict)))
+        #print("distances_intra lenth1 {}".format(len(distances_intra)))
+        for key in sorted_dict:
+            #print("key {}".format(key))
+            #print("sorted_dict[key]  {}".format(sorted_dict[key]))
+            #print(" distances_intra[key] {}".format( distances_intra[key]))
+            if sorted_dict[key] < distances_intra[key]:
+                community_nodes.append(self.data_train[key])
+                community_nodes_keys.append(key)
+                #print("KEY IN COMMUNITY {}".format(key))
+        #print("community_nodes {} community_nodes_keys {} ".format(community_nodes,community_nodes_keys))
+        return community_nodes,community_nodes_keys
 
 
     def _find_bmu_based_neuron_representation_ineachW(self,x, weightIndex, newWeights):
@@ -427,56 +396,42 @@ class UTDSM_SOM():
         return self.non_empty_neurons[weightIndex][np.argmin(distance)]
 
 
-    def _find_bmu_among_multipleW(self,x):
+    def _find_belonged_neuron(self,x,Y):
         """
         Find the index of the best matching unit for the input vector x.
         """  
         #initial distance
-        #print("self.rightdatas {} ".format(self.rightdatas))
-        #print("x {} self.rightdatas[0][0] {} ".format(x,self.rightdatas[0][0]))
+        #print("len Y {}".format(len(Y)))
+        Y = np.array(Y)
+        firstindex = 0
+        for i in range(len(Y)):
+            if Y[i]!= []:
+                firstindex = i
+                break
+                
+
         #*** self.rightdatas = [[[],[]],[data in rightdata2],[]]
-        distance = math.dist(x,self.rightdatas[0][0][0])
+        #if len(Y[firstindex]) == 1 :
+        #    print("x {} Y[0] {}".format(x,Y[firstindex][0]))
+        #    distance = math.dist(x,Y[firstindex])
+        #else:
+        #print("x {} Y[0] {}".format(x,Y[firstindex]))
+        #print("x {} Y[0][0] {}".format(x,Y[firstindex][0]))
+        distance = math.dist(x,Y[firstindex][0])
         
         w_index = 0
-        for i in range(0,len(self.rightdatas)):
-            for j in range(0,len(self.rightdatas[i])):
-                tree = spatial.KDTree(self.rightdatas[i][j])
+        for i in range(0,len(Y)):
+            if Y[i] != []:
+                #print("i {}".format(i))
+                tree = spatial.KDTree(Y[i])
                 currentdistance = tree.query(x)[0]
                 if currentdistance < distance:
                     distance = currentdistance
-                    w_index = i
-                                
-        x_stack = np.stack([x]*(self.rightWs[w_index].shape[0]), axis=0)
-        distance = np.linalg.norm((x_stack -self.rightWs[w_index]).astype(float), axis=1)
-        neuronsnumber_before_bestW = 0
-        for j in range (0,w_index):
-            neuronsnumber_before_bestW = neuronsnumber_before_bestW + self.rightWs[j].shape[0]
-        predicted_cluster_index = neuronsnumber_before_bestW +  np.argmin(distance)
-        return  predicted_cluster_index
+                    w_index = i                               
+        #print("distance {}".format(distance))
+        #print("w_index {}".format(w_index))
+        return  w_index
 
-    # get predicted cluster label in all W (the neruons in W that has no data represented will be ignored)
-    def predict_among_nearestW_representedData(self,X,stop_split_num,weights):
-        predict_labels =[]
-        for x in X:
-            nearest_neuron_in_eachW = []
-            #**** split_number is n but weights number is n-1 as the last split doesn't generate new weights and self.empty_neurons or self.nonempty_neurons 
-            for i in range(0,stop_split_num+1):
-                #get nearest neurons in each W and make sure each neurons have data to represent
-                bmu_index = self._find_bmu_based_neuron_representation_ineachW(x,i,weights[i]) 
-                nearest_neuron_in_eachW.append(bmu_index) 
-                #nearest_neuron_in_eachW = [1,2,0..] the value is the nearest neurons index in each W
-                #print("nearest W index {} in W {}".format(bmu_index, i))
-            all_compared_data = []
-            for j in range(0,len(nearest_neuron_in_eachW)):
-                #if len(self.neuron_represent_datas[j][nearest_neuron_in_eachW[j]]) >0:
-                #_find_bmu_based_neuron_representation_ineachW already make sure that len(self.neuron_represent_datas[j][nearest_neuron_in_eachW[j]]) >0 
-                all_compared_data.append(self.neuron_represent_datas[j][nearest_neuron_in_eachW[j]])
-            #print("all_compared_data size {}".format(len(all_compared_data)))
-            best_w_index = self.getBestWAmongAllW(x,all_compared_data)
-            #****predicte_label range from 0 to (split_number+1)*self.som.n*self.som.n
-            predict_labels.append(self.som.n*self.som.n* best_w_index + bmu_index)
-
-        return np.array(predict_labels)
 
     def getBestWAmongAllW(self,x,comparedData):
         distance = math.dist(x,comparedData[0][0])
@@ -495,7 +450,7 @@ class UTDSM_SOM():
         return best_W_index
     
 
-    def predict_among_multipleW(self,X):
+    def predict_based_splitdata(self,X,Y):
         """
         Predict cluster for each element in X.
         Parameters
@@ -515,93 +470,228 @@ class UTDSM_SOM():
 
         labels =[]
         for x in X:
-            b = self._find_bmu_among_multipleW(x)
+            b = self._find_belonged_neuron(x,Y)
             labels.append(b)
 
         # winWindexlabels, labels = np.array([ for x in X])
         # labels will be always from 0 - (m*n)*stop_split_num-1
         return np.array(labels)
 
+    
 
-    def getScore(self,scorename, y_true, y_pred, scoretype):
-        if scoretype == 0:
-            self.purity_score(scorename,y_true,y_pred)
-        elif scoretype == 1:
-            self.nmiScore(scorename,y_true,y_pred)
-        elif scoretype == 2:
-            self.ariScore(scorename,y_true,y_pred)
+    def getScore(self,scorename, y_true, y_pred):
+        #print(scorename)
+        self.purity_score(scorename,y_true,y_pred)
+        self.nmiScore(scorename,y_true,y_pred)
+        self.ariScore(scorename,y_true,y_pred)
 
-    def run(self,error_rate =1,score_type = 0):
+
+
+    def initializedata(self):
+        self.train_W0_predicted_label = []
+        self.train_W_combined_predicted_label = []
+        self.test_W0_predicted_label =   []
+        self.test_W_combined_predicted_label =  []
+        
+
+
+    def run(self,train_label):
         """
         score_type 0 purity 1 numi 2 rai
+        
         """
-        self.NoErrorDataExist = False       
         # get train and test dataset 
-        self._initialdatasetsize()
-        #train som to get W0
-        self.som.fit(self.data_train)
-        self.weights.append(self.som.weights0)
-        
-        self.train_W0_predicted_label = self.som.predict(self.data_train,self.som.weights0)   
-        transferred_predicted_label_all_train = self.transferClusterLabelToClassLabel(True,self.som.weights0.shape[0],self.train_W0_predicted_label,self.data_train)        
-        self.getScore("all_train_score_W0",self.label_train,transferred_predicted_label_all_train,score_type)
+        #print(self.data_train)
+        data_train = []
+        true_train_label = []
 
-        self.test_W0_predicted_label = self.som.predict(self.data_test,self.som.weights0)   
-        transferred_predicted_label_test_W0 = self.transferClusterLabelToClassLabel(False,self.som.weights0.shape[0],self.test_W0_predicted_label,self.data_test)                                    
-        self.getScore("test_score_W0",self.test_label,transferred_predicted_label_test_W0,score_type)
-        #initialize
-        current_data_train =   self.initial_current_traindata
-        #self.get_indices_in_predicted_clusters(self.predicted_classNum,self.train_W0_predicted_label,self.data_train)
- 
-        while(self.NoErrorDataExist != True):
-            next_iteration_errordata = []
-            #print("len(current_data_train) {}current_data_train  {} " .format(len(current_data_train),current_data_train))
-            if len(current_data_train) == 1:
-                error_datas = self.getErrorDataBasedOnErrorRate(error_rate,current_data_train[0])
-                for x in error_datas:
-                    next_iteration_errordata.append(x)
-            else:
-                for x in current_data_train:
-                    if x !=[]:
-                        error_datas = self.getErrorDataBasedOnErrorRate(error_rate,x)
-                    for item in error_datas:
-                        next_iteration_errordata.append(item)
+        for item in train_label:
+            data_train.append(self.data_train[item])
+            true_train_label.append(self.train_label[item])
+
+        data_train = np.array(data_train)
+        self.som.fit(data_train)
+        weight0 = self.som.weights0
+        newclustered_datas = []
+        newclustered_datas_index = []
+
+        self.train_W0_predicted_label = self.som.predict(data_train,weight0)   
+       # print(" self.train_W0_predicted_label {}".format( self.train_W0_predicted_label ))
+        predicted_clusters, current_clustered_datas = self.get_indices_in_predicted_clusters(self.som.m*self.som.n, self.train_W0_predicted_label,train_label)   
+        #print("predicted_clusters {}".format(predicted_clusters))
+        # predicted_clusters  [[23,31,21,2],[1,3,5,76],[45,5,12]] index in data_train
+
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters) ,0)  
+        #print("initial   mapping {}".format(self.PLabel_to_Tlabel_Mapping_W0))
+
+        # the value in predicted_clusters are true label value       
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W0)      
+        #print("transferred_predicted_label_train_W0 {}".format(transferred_predicted_label_train_W0))
+       
+        if self.all_split_datas == []:
+            self.getScore("all_train_score_W0",true_train_label,transferred_predicted_label_train_W0)
+            self.test_W0_predicted_label = self.som.predict(self.data_test,weight0)   
+            transferred_predicted_label_test_W0 = self.transferClusterLabelToClassLabel(False,weight0.shape[0],self.test_W0_predicted_label,self.data_test)    
+            self.getScore("test_score_W0",self.test_label,transferred_predicted_label_test_W0)
+
+        
+        searched_datas = copy.deepcopy(current_clustered_datas)
+        searched_datas = array(searched_datas).tolist()
+      
+        for i in range(0,len(searched_datas)):
+            # get discasending fartheset node in current clustered_data
+            sorted_dict = self.split_data(predicted_clusters[i],  weight0[i])
+            #print(" the data searched amount is {} in predicterd clusters {}".format(len(sorted_dict),i))
+            while len(sorted_dict) >0:    
             
-            current_data_train = next_iteration_errordata
+                farthest_intra_node_index = self.getfarthest_intra_node_index(sorted_dict)
+               # print("farthest_intra_nnode_index {} searched_datas[i] len {} i {}".format(farthest_intra_nnode_index,len(searched_datas[i]),i))
+                current_check_node = self.data_train[farthest_intra_node_index]
+               
+                del sorted_dict[farthest_intra_node_index]
+                #print("len sorted_dict {}".format(sorted_dict))
+                #print("scurrent_check_node {}".format(current_check_node))
+                #*** check if current_check_node is in other community
+                already_in_community = False
+   
+                for k in range(0,len(newclustered_datas)):
+                    #print("len(self.newclustered_datas) {} lenth {}".format(self.newclustered_datas[i],len(self.newclustered_datas[i])))
+                    if  current_check_node in np.array(newclustered_datas[k]):
+                        already_in_community = True     
+                        #print("already_in_community {}".format(farthest_intra_node_index))                  
+                        break
+                
+                if already_in_community :
+                    continue
+
+
+                
+                newclustered_data = []
+                new_predicted_clusters = []
+     
+                for j in range(0,len(searched_datas)):
+                    if j != i:
+                       # print("i {} j {}".format(i,j))
+                       # print("inter data searched  i {} self.current_clustered_datas[j] j {} len{} )".format(i, j,len(self.current_clustered_datas[j] )))
+                        sorted_dict_inter, distances_inter =  self.get_allnode_distance_in_a_group(current_check_node,predicted_clusters[j],weight0[j])
+                       # print("sorted_dict_inter {} ".format(sorted_dict_inter))
+                        a,b = self.get_inter_community_nodes(sorted_dict_inter,distances_inter)
+                        if a != []:
+                            for item in a:
+                                newclustered_data.append(item)
+                      
+                        if b != []:
+                           # print(" self.predicted_clusters 0[j] {}".format( self.predicted_clusters[j]))
+                            #print("b {}".format(b))
+                            for item in b:
+                                predicted_clusters[j].remove(item)
+                                new_predicted_clusters.append(item)
+                           
+                            if predicted_clusters[j] != []: 
+                               current_clustered_datas[j] = list(self.data_train[predicted_clusters[j]])
+                               #print("predicted_clusters[j] {}".format( predicted_clusters[j]) )
+                               #print("j {}   current_clustered_datas[j] {}".format(j,  current_clustered_datas[j])) 
+                          
+                sorted_dict_intra, distances_intra =  self.get_allnode_distance_in_a_group(current_check_node,predicted_clusters[i],weight0[i])
+                #print(" i {}".format( i))
+
+                a1,b1 = self.get_intra_community_nodes(sorted_dict_intra,weight0[i])
+                #add self to the community
+                #print(" predicted_clusters[i] initial {}".format( predicted_clusters[i]))
+                if a1!=[]:
+                    for item1 in a1:
+                        newclustered_data.append(item1)    
+               
+                if b1!=[]:
+                    #print(" b1 {}".format( b1))
+                    for item in b1:
+                        predicted_clusters[i].remove(item)
+                        new_predicted_clusters.append(item)
+                  
+                    current_clustered_datas[i] = np.array(current_clustered_datas[i])                  
+                    if predicted_clusters[i] != [] :
+                        current_clustered_datas[i] = list(self.data_train[predicted_clusters[i]] )
+                    
+                       # print("i {} predicted_clusters[i]  {} len  current_clustered_datas[i] {}".format(i, predicted_clusters[i] , len(current_clustered_datas[i])) )
+                 # add current data to the community generated
+                if a!=[] or a1!=[]:
+                     newclustered_data.append(current_check_node)
+                     new_predicted_clusters.append(farthest_intra_node_index)
+                     #*** remove current_check_node
+                     predicted_clusters[i].remove(farthest_intra_node_index)
+                     current_clustered_datas[i] = list(self.data_train[predicted_clusters[i]] )
+
+
+                newclustered_data = np.array(newclustered_data)
+
+                if newclustered_data != []:
+                    newclustered_datas.append(newclustered_data)
+                    newclustered_datas_index.append(new_predicted_clusters)
+                    #print("self.newclustered_datas 2 {}".format(self.newclustered_datas))
+
+        for item in current_clustered_datas:
+            if item !=[]:
+                self.all_split_datas.append(item)
         
-        #get combined W
+        for  item in predicted_clusters:
+             if item !=[]:
+                self.all_split_datas_indexes.append(item)
 
-        self.combinedweight = self.rightWs[0]
-        for i in range(1,len(self.rightWs)):
-            print("self.rightWs[i]{}".format(self.rightWs[i]))
-            self.combinedweight =  np.row_stack((self.combinedweight, self.rightWs[i]))
-        print("self.combinedweight{}".format(self.combinedweight))
-        self.train_W_combined_predicted_label = self.som.predict(self.data_train,self.combinedweight)    
-           
-        print("self.combinedweight.shape[0] {}".format(self.combinedweight.shape[0]))
-        self.train_W_combined_predicted_label = self.predict_among_multipleW(self.data_train)    
-        print("train_W_combined_predicted_label {}".format(self.train_W_combined_predicted_label))
-        transferred_predicted_label_train_WCombine = self.transferClusterLabelToClassLabel(True,self.combinedweight.shape[0],self.train_W_combined_predicted_label,self.data_train,Wtype = 1)   
-        self.getScore("all_train_score_W_Combined",self.label_train,transferred_predicted_label_train_WCombine,score_type)       
-
-        self.test_W_combined_predicted_label = self.predict_among_multipleW(self.data_test)   
+        nextround_train_data = []
+        nextround_train_label = []
 
 
-        transferred_predicted_label_test = self.transferClusterLabelToClassLabel(False,self.combinedweight.shape[0],self.test_W_combined_predicted_label,self.data_test,Wtype = 1)   
-        self.getScore("test_score_W_combined",self.test_label,transferred_predicted_label_test,score_type)
+        if newclustered_datas !=[]:
+            for item in newclustered_datas:
+                for j in item:
+                    nextround_train_data.append(j)
 
-        if score_type == 0:
-            print("Purity Score")   
-        elif score_type == 1:
-            print("NMI Score")
-        elif score_type == 2:
-            print("ARI Score")     
+            for item1 in newclustered_datas_index:
+                for k in item1:
+                    nextround_train_label.append(k)
+            nextround_train_data = np.array(nextround_train_data)
+            nextround_train_label = np.array(nextround_train_label)
+            #print("Split one time!")
+            self.run(nextround_train_label)
+        else:
+            self.test_combineW() 
+    
 
+
+    def test_combineW(self):       
+        #print("all_split_datas_indexes {}".format(self.all_split_datas_indexes))
         
-        print("train_score_W0 : {}".format( self.all_train_score_W0))
-        print("train_score_W\': {}".format(self.all_train_score_W_Combined))
-        print("test_score_W0 : {}".format( self.test_score_W0))
-        print("test_score_W\': {}".format(self.test_score_W_combined))
+        self.train_W_combined_predicted_label = self.predict_based_splitdata(self.data_train,self.all_split_datas)    
+
+        #print("self.train_W_combined_predicted_label {}".format(self.train_W_combined_predicted_label))  
+        #*** needs to use self.combinedweight.shape[0] cannot use self.som.m*self.som.n as neruons is changed
+        predicted_clusters,current_clustered_datas = self.get_indices_in_predicted_clusters(len(self.all_split_datas), self.train_W_combined_predicted_label,self.train_label)  
+        self.getLabelMapping(self.get_mapped_class_in_clusters(predicted_clusters),1)  
+        # the value in predicted_clusters are true label value       
+        transferred_predicted_label_train_WCombine =  self.transferClusterLabelToClassLabel(False,len(self.all_split_datas),self.train_W_combined_predicted_label,self.data_test,Wtype = 1)                 
+        self.getScore("all_train_score_W_Combined",self.train_label,transferred_predicted_label_train_WCombine)      
+
+
+        self.test_W_combined_predicted_label = self.predict_based_splitdata(self.data_test,self.all_split_datas)   
+
+        transferred_predicted_label_test = self.transferClusterLabelToClassLabel(False,len(self.all_split_datas),self.test_W_combined_predicted_label,self.data_test,Wtype = 1)   
+        #print("transferred_predicted_label_test {}".format(transferred_predicted_label_test))     
+        self.getScore("test_score_W_combined",self.test_label,transferred_predicted_label_test)
+        print("Combine Neurons Number :{}".format(len(self.all_split_datas)))
+        #for item in self.all_split_datas:
+        #    print("Member number in item :{}".format(len(item)))
+        #if score_type == 0:
+        #    print("Purity Score")   
+        #elif score_type == 1:
+        #    print("NMI Score")
+        #elif score_type == 2:
+        #    print("ARI Score")     
+#
+        #
+        #print("train_score_W0 : {}".format( self.all_train_score_W0))
+        #print("train_score_W\': {}".format(self.all_train_score_W_Combined))
+        #print("test_score_W0 : {}".format( self.test_score_W0))
+       # print("test_score_W\': {}".format(self.test_score_W_combined))
 
      
         

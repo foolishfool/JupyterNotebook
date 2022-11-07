@@ -1,287 +1,261 @@
-"""
-Script to implement simple self organizing map using PyTorch, with methods
-similar to clustering method in sklearn.
-@author: Riley Smith
-Created: 1-27-21
-"""
-
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 
-class SOM():
+
+class SOM(object):
     """
-    The 2-D, rectangular grid self-organizing map class using Numpy.
+    2-D Self-Organizing Map with Gaussian Neighbourhood function
+    and linearly decreasing learning rate.
     """
-    def __init__(self, m=3, n=3, dim=3, lr=1, sigma=1, max_iter=3000,
-                    random_state=None):
+
+    #To check if the SOM has been trained
+    _trained = False
+
+    def __init__(self, m, n, dim, weight_after_insertion, n_iterations=42, alpha=None, sigma=None):
         """
-        Parameters
-        ----------
-        m : int, default=3
-            The shape along dimension 0 (vertical) of the SOM.
-        n : int, default=3
-            The shape along dimesnion 1 (horizontal) of the SOM.
-        dim : int, default=3
-            The dimensionality (number of features) of the input space.
-        lr : float, default=1
-            The initial step size for updating the SOM weights.
-        sigma : float, optional
-            Optional parameter for magnitude of change to each weight. Does not
-            update over training (as does learning rate). Higher values mean
-            more aggressive updates to weights.
-        max_iter : int, optional
-            Optional parameter to stop training if you reach this many
-            interation.
-        random_state : int, optional
-            Optional integer seed to the random number generator for weight
-            initialization. This will be used to create a new instance of Numpy's
-            default random number generator (it will not call np.random.seed()).
-            Specify an integer for deterministic results.
+        Initializes all necessary components of the TensorFlow
+        Graph.
+
+        m X n are the dimensions of the SOM. 'n_iterations' should
+        should be an integer denoting the number of iterations undergone
+        while training.
+        'dim' is the dimensionality of the training inputs.
+        'alpha' is a number denoting the initial time(iteration no)-based
+        learning rate. Default value is 0.3
+        'sigma' is the the initial neighbourhood value, denoting
+        the radius of influence of the BMU while training. By default, its
+        taken to be half of max(m, n).
         """
-        # Initialize descriptive features of SOM
-        self.m = m
-        self.n = n
-        self.dim = dim
-        self.shape = (m, n)
-        self.initial_lr = lr
-        self.lr = lr
-        self.sigma = sigma
-        self.max_iter = max_iter
 
-        # Initialize weights
-        self.random_state = random_state
-        rng = np.random.default_rng(random_state)
-        self.weights = rng.normal(size=(m * n, dim))
-        self._locations = self._get_locations(m, n)
+        #Assign required variables first
+        self._m = m
+        self._n = n
+        if alpha is None:
+            alpha = 0.3
+        else:
+            alpha = float(alpha)
+        if sigma is None:
+            sigma = max(m, n) / 2.0
+        else:
+            sigma = float(sigma)    #initial neighbourhood value
+        self._n_iterations = abs(int(n_iterations))
 
-        # Set after fitting
-        self._inertia = None
-        self._n_iter_ = None
-        self._trained = False
 
-    def _get_locations(self, m, n):
-        """
-        Return the indices of an m by n array.
-        """
-        return np.argwhere(np.ones(shape=(m, n))).astype(np.int64)
 
-    def _find_bmu(self, x):
-        """
-        Find the index of the best matching unit for the input vector x.
-        """
-        print('11111')
-        print(x)
-        # Stack x to have one row per weight
-        x_stack = np.stack([x]*(self.m*self.n), axis=0)
-        # Calculate distance between x and each weight
-        distance = np.linalg.norm(x_stack - self.weights, axis=1)
-        # Find index of best matching unit
-        return np.argmin(distance)
+        ##INITIALIZE GRAPH
+        self._graph = tf.Graph()
 
-    def step(self, x):
-        """
-        Do one step of training on the given input vector.
-        """
-        # Stack x to have one row per weight
-        x_stack = np.stack([x]*(self.m*self.n), axis=0)
+        ##POPULATE GRAPH WITH NECESSARY COMPONENTS
+        with self._graph.as_default():
 
-        # Get index of best matching unit
-        bmu_index = self._find_bmu(x)
+            ##VARIABLES AND CONSTANT OPS FOR DATA STORAGE
 
-        # Find location of best matching unit
-        bmu_location = self._locations[bmu_index,:]
-
-        # Find square distance from each weight to the BMU
-        stacked_bmu = np.stack([bmu_location]*(self.m*self.n), axis=0)
-        bmu_distance = np.sum(np.power(self._locations.astype(np.float64) - stacked_bmu.astype(np.float64), 2), axis=1)
-
-        # Compute update neighborhood
-        neighborhood = np.exp((bmu_distance / (self.sigma ** 2)) * -1)
-        local_step = self.lr * neighborhood
-
-        # Stack local step to be proper shape for update
-        local_multiplier = np.stack([local_step]*(self.dim), axis=1)
-
-        # Multiply by difference between input and weights
-        delta = local_multiplier * (x_stack - self.weights)
-
-        # Update weights
-        self.weights += delta
-
-    def _compute_point_intertia(self, x):
-        """
-        Compute the inertia of a single point. Inertia defined as squared distance
-        from point to closest cluster center (BMU)
-        """
-        # Find BMU
-        bmu_index = self._find_bmu(x)
-        bmu = self.weights[bmu_index]
-        # Compute sum of squared distance (just euclidean distance) from x to bmu
-        return np.sum(np.square(x - bmu))
-
-    def fit(self, X, epochs=1, shuffle=True):
-        """
-        Take data (a tensor of type float64) as input and fit the SOM to that
-        data for the specified number of epochs.
-        Parameters
-        ----------
-        X : ndarray
-            Training data. Must have shape (n, self.dim) where n is the number
-            of training samples.
-        epochs : int, default=1
-            The number of times to loop through the training data when fitting.
-        shuffle : bool, default True
-            Whether or not to randomize the order of train data when fitting.
-            Can be seeded with np.random.seed() prior to calling fit.
-        Returns
-        -------
-        None
-            Fits the SOM to the given data but does not return anything.
-        """
-        # Count total number of iterations
-        global_iter_counter = 0
-        n_samples = X.shape[0]
-        total_iterations = np.minimum(epochs * n_samples, self.max_iter)
-
-        for epoch in range(epochs):
-            # Break if past max number of iterations
-            if global_iter_counter > self.max_iter:
-                break
-
-            if shuffle:
-                rng = np.random.default_rng(self.random_state)
-                indices = rng.permutation(n_samples)
+            #Randomly initialized weightage vectors for all neurons,
+            #stored together as a matrix Variable of size [m*n, dim]
+            #Every node on output are fully connected to input (features)
+            # API: tf.random_normal: Outputs random values from a normal distribution.
+            if  weight_after_insertion is None:
+                self._weightage_vects = tf.Variable(tf.random.normal (
+                    [m*n, dim]))
             else:
-                indices = np.arange(n_samples)
+                self._weightage_vects = tf.Variable(weight_after_insertion)
 
-            # Train
-            for idx in indices:
-                # Break if past max number of iterations
-                if global_iter_counter > self.max_iter:
-                    break
-                input = X[idx]
-                # Do one step of training
-                self.step(input)
-                # Update learning rate
-                global_iter_counter += 1
-                self.lr = (1 - (global_iter_counter / total_iterations)) * self.initial_lr
 
-        # Compute inertia
-        inertia = np.sum(np.array([float(self._compute_point_intertia(x)) for x in X]))
-        self._inertia_ = inertia
+            #Matrix of size [m*n, 2] for SOM grid locations
+            #of neurons
+            self._location_vects = tf.constant(np.array(
+                list(self._neuron_locations(m, n))))
 
-        # Set n_iter_ attribute
-        self._n_iter_ = global_iter_counter
 
-        # Set trained flag
+            ##PLACEHOLDERS FOR TRAINING INPUTS
+            #We need to assign them as attributes to self, since they
+            #will be fed in during training
+
+            #The training vector
+            self._vect_input = tf.placeholder("float",  shape=[dim])
+            #Iteration number
+            self._iter_input = tf.placeholder("float")
+
+            ##CONSTRUCT TRAINING OP PIECE BY PIECE
+            #Only the final, 'root' training op needs to be assigned as
+            #an attribute to self, since all the rest will be executed
+            #automatically during training
+
+            #To compute the Best Matching Unit given a vector
+            #Basically calculates the Euclidean distance between every
+            #neuron's weightage vector and the input, and returns the
+            #index of the neuron which gives the least value
+            # API:
+            #   tf.argmin: Returns the index with the smallest value across axes of a tensor.
+            #   tf.reduce_sum: second arg means reduce col axis
+            #   tf.pow: Computes the power of one value to another. 2 means square
+            #   tf.stack: Stacks a list of rank-R tensors into one rank-(R+1) tensor. rank1 tensor --> rank2 tensor
+            bmu_index = tf.argmin(
+                            tf.sqrt(
+                                tf.reduce_sum(
+                                    tf.pow(
+                                        tf.subtract(
+                                            self._weightage_vects,
+                                            tf.stack([self._vect_input for i in range(m*n)])
+                                            ),
+                                    2),
+                                1)),
+                        0)
+
+            #This will extract the location of the BMU based on the BMU's
+            #index
+            # API
+            #  tf.pad: add padding to matrix, np.array([[0, 1]]) means add 1 element after bmu matrix
+            slice_input = tf.pad(tf.reshape(bmu_index, [1]),
+                                 np.array([[0, 1]]))
+            # bmu_loc_1 = tf.slice(self._location_vects, slice_input,tf.constant(np.array([1, 2])))
+            bmu_loc = tf.reshape(tf.slice(self._location_vects, slice_input,
+                                          tf.cast(tf.constant(np.array([1, 2])), dtype=tf.int64)),
+                                 [2])
+
+            #To compute the alpha and sigma values based on iteration
+            #number
+            learning_rate_op = tf.subtract(1.0, tf.div(self._iter_input,
+                                                  self._n_iterations))
+            _alpha_op = tf.multiply(alpha, learning_rate_op)
+            _sigma_op = tf.multiply(sigma, learning_rate_op)
+
+            #Construct the op that will generate a vector with learning
+            #rates for all neurons, based on iteration number and location
+            #wrt BMU.
+            # API:
+            #   tf.cast: Casts a tensor to a new type.
+            #   tf.negative: Computes numerical negative value element-wise.
+
+            bmu_distance_squares = tf.reduce_sum(tf.pow(tf.subtract(
+                self._location_vects, tf.stack(
+                    [bmu_loc for i in range(m*n)])), 2), 1)
+            neighbourhood_func = tf.exp(tf.negative(tf.div(tf.cast(
+                bmu_distance_squares, "float32"), tf.pow(_sigma_op, 2))))
+            learning_rate_op = tf.multiply(_alpha_op, neighbourhood_func)
+
+            #Finally, the op that will use learning_rate_op to update
+            #the weightage vectors of all neurons based on a particular
+            #input
+            #  API:
+            #   tf.tile:  For example, tiling [a b c d] by [2] produces [a b c d a b c d]
+            #   tf.assign: Update 'ref' by assigning 'value' to it.
+            learning_rate_multiplier = tf.stack([tf.tile(tf.slice(
+                learning_rate_op, np.array([i]), np.array([1])), [dim])
+                                               for i in range(m*n)])
+
+
+            # learning_rate_multiplier_1 = [tf.tile(tf.slice(
+            #     learning_rate_op, np.array([1]), np.array([1])), [dim]) for i in range(m*n)]
+            # learning_rate_multiplier_2 = tf.slice(
+            #     learning_rate_op, np.array([1]), np.array([1]))
+            # learning_rate_multiplier_3 = learning_rate_op, np.array([1])
+            # learning_rate_multiplier_4 = np.array([1])
+
+
+            weightage_delta = tf.multiply(
+                learning_rate_multiplier,
+                tf.subtract(tf.stack([self._vect_input for i in range(m*n)]),
+                       self._weightage_vects))
+            new_weightages_op = tf.add(self._weightage_vects,
+                                       weightage_delta)
+            self._training_op = tf.assign(self._weightage_vects,
+                                          new_weightages_op)
+
+            ##INITIALIZE SESSION
+            self._sess = tf.Session()
+
+            ##INITIALIZE VARIABLES
+            init_op = tf.global_variables_initializer()
+            self._sess.run(init_op)
+
+            # print('------self._training_op---------')
+            # print(self._sess.run(self._training_op,feed_dict={self._vect_input: input_data[0],self._iter_input: 1}))
+
+
+    def _neuron_locations(self, m, n):
+        """
+        Yields one by one the 2-D locations of the individual neurons
+        in the SOM.
+        """
+        #Nested iterations over both dimensions
+        #to generate all 2-D locations in the map
+        # result: Tensor("Const:0", shape=(49, 2), dtype=int64)
+        for i in range(m):
+            for j in range(n):
+                yield np.array([i, j])
+
+    def train(self, input_vects):
+        """
+        Trains the SOM.
+        'input_vects' should be an iterable of 1-D NumPy arrays with
+        dimensionality as provided during initialization of this SOM.
+        Current weightage vectors for all neurons(initially random) are
+        taken as starting conditions for training.
+        """
+
+        # Training iterations
+        # for iter_no in range(self._n_iterations):
+            # print('LoopNo: ' + str(iter_no) + ' - Time: ' + str(datetime.datetime.now().time()))
+            #Train with each vector one by one
+
+        print('SOM-Start')
+        # for i in range(10):
+        iter_no = 1
+        for input_vect in input_vects:
+            self._sess.run(self._training_op,
+                           feed_dict={self._vect_input: input_vect,
+                                      self._iter_input: iter_no})
+
+            iter_no += 1
+        # print('training end : ' + str(datetime.datetime.now()))
+
+
+        # Store a centroid grid for easy retrieval later on
+        # list() : converts to lists
+        # enumerate:returns a iterator that will return (0, thing[0]), (1, thing[1]), (2, thing[2]), and so forth.
+        centroid_grid = [[] for i in range(self._m)]
+        self._weightages = list(self._sess.run(self._weightage_vects))
+
+        self._locations = list(self._sess.run(self._location_vects))
+        for i, loc in enumerate(self._locations):
+            centroid_grid[loc[0]].append(self._weightages[i])
+        self._centroid_grid = centroid_grid
+
         self._trained = True
+        print('SOM-finish')
+        print(np.array(self._weightages))
+        return np.array(self._weightages)
 
-        return
+    # def get_centroids(self):
+    #     """
+    #     Returns a list of 'm' lists, with each inner list containing
+    #     the 'n' corresponding centroid locations as 1-D NumPy arrays.
+    #     """
+    #     if not self._trained:
+    #         raise ValueError("SOM not trained yet")
+    #     return self._centroid_grid
 
-    def predict(self, X):
+    def map_vects(self, input_vects):
         """
-        Predict cluster for each element in X.
-        Parameters
-        ----------
-        X : ndarray
-            An ndarray of shape (n, self.dim) where n is the number of samples.
-            The data to predict clusters for.
-        Returns
-        -------
-        labels : ndarray
-            An ndarray of shape (n,). The predicted cluster index for each item
-            in X.
+        Maps each input vector to the relevant neuron in the SOM
+        grid.
+        'input_vects' should be an iterable of 1-D NumPy arrays with
+        dimensionality as provided during initialization of this SOM.
+        Returns a list of 1-D NumPy arrays containing (row, column)
+        info for each input vector(in the same order), corresponding
+        to mapped neuron.
         """
-        # Check to make sure SOM has been fit
+
         if not self._trained:
-            raise NotImplementedError('SOM object has no predict() method until after calling fit().')
+            raise ValueError("SOM not trained yet")
 
-        # Make sure X has proper shape
-        assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
-        assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
-
-        labels = np.array([self._find_bmu(x) for x in X])
-        return labels
-
-    def transform(self, X):
-        """
-        Transform the data X into cluster distance space.
-        Parameters
-        ----------
-        X : ndarray
-            Data of shape (n, self.dim) where n is the number of samples. The
-            data to transform.
-        Returns
-        -------
-        transformed : ndarray
-            Transformed data of shape (n, self.n*self.m). The Euclidean distance
-            from each item in X to each cluster center.
-        """
-        # Stack data and cluster centers
-        X_stack = np.stack([X]*(self.m*self.n), axis=1)
-        cluster_stack = np.stack([self.weights]*X.shape[0], axis=0)
-
-        # Compute difference
-        diff = X_stack - cluster_stack
-
-        # Take and return norm
-        return np.linalg.norm(diff, axis=2)
-
-    def fit_predict(self, X, **kwargs):
-        """
-        Convenience method for calling fit(X) followed by predict(X).
-        Parameters
-        ----------
-        X : ndarray
-            Data of shape (n, self.dim). The data to fit and then predict.
-        **kwargs
-            Optional keyword arguments for the .fit() method.
-        Returns
-        -------
-        labels : ndarray
-            ndarray of shape (n,). The index of the predicted cluster for each
-            item in X (after fitting the SOM to the data in X).
-        """
-        # Fit to data
-        self.fit(X, **kwargs)
-
-        # Return predictions
-        return self.predict(X)
-
-    def fit_transform(self, X, **kwargs):
-        """
-        Convenience method for calling fit(X) followed by transform(X). Unlike
-        in sklearn, this is not implemented more efficiently (the efficiency is
-        the same as calling fit(X) directly followed by transform(X)).
-        Parameters
-        ----------
-        X : ndarray
-            Data of shape (n, self.dim) where n is the number of samples.
-        **kwargs
-            Optional keyword arguments for the .fit() method.
-        Returns
-        -------
-        transformed : ndarray
-            ndarray of shape (n, self.m*self.n). The Euclidean distance
-            from each item in X to each cluster center.
-        """
-        # Fit to data
-        self.fit(X, **kwargs)
-
-        # Return points in cluster distance space
-        return self.transform(X)
-
-    @property
-    def cluster_centers_(self):
-        return self.weights.reshape(self.m, self.n, self.dim)
-
-    @property
-    def inertia_(self):
-        if self._inertia_ is None:
-            raise AttributeError('SOM does not have inertia until after calling fit()')
-        return self._inertia_
-
-    @property
-    def n_iter_(self):
-        if self._n_iter_ is None:
-            raise AttributeError('SOM does not have n_iter_ attribute until after calling fit()')
-        return self._n_iter_
+        to_return = []
+        for vect in input_vects:
+            min_index = min([i for i in range(len(self._weightages))],
+                            key=lambda x: np.linalg.norm(vect-
+                                                         self._weightages[x]))
+            to_return.append(self._locations[min_index])
+        print("to_return {}".format(to_return))
+        return to_return

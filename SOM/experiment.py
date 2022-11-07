@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
+from copy import deepcopy
 from scipy.interpolate import make_interp_spline, BSpline
 import matplotlib.pyplot as plt
 from typing import List
 import newSom
 import TDSM_SOM
+import UTDSM
 import numpy as np
 from sklearn.metrics import silhouette_score
 import scipy.stats as stats
@@ -105,7 +107,7 @@ class Experiment():
             test_score_W0_global_a = []
             test_score_W_combine_global_a = []
 
-            p_values = []
+ 
             y = 1
 
 
@@ -299,3 +301,131 @@ class Experiment():
             print(results)
 
             stats.ttest_ind(test_score_W0_global_a, test_score_W_combine_global_a,alternative = 'less')
+
+
+        
+
+        def UTtest(self,dataread, class_num,dim_num,scope_num,unstable_repeat_num):
+            new_neuron_num = []
+              
+            
+            all_train_score_W0_n =[]
+            all_train_score_W_combine_n =[]
+            test_score_W0_n = []
+            test_score_W_combine_n = []
+
+
+            all_train_score_W0_a =[]
+            all_train_score_W_combine_a =[]
+            test_score_W0_a = []
+            test_score_W_combine_a = []
+
+
+            y = 1
+            plot_unit = [1]
+
+            while y <= unstable_repeat_num:
+
+                #print("neuron unit number: {}".format(class_num*x))
+                #print("*******************\n")
+                som = newSom.SOM(m= class_num, n= scope_num, dim=dim_num)  
+                optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,class_num)
+                optimize_W.run(dataread.data_train,dataread.label_train)
+
+
+                all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
+                test_score_W0_n.append(optimize_W.test_score_W0_n)
+                test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
+
+
+                all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
+                test_score_W0_a.append(optimize_W.test_score_W0_n)
+                test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
+     
+
+
+                #new_neuron_num.append(optimize_W.combinedweight.shape[0])
+
+                
+                
+                y =y+1
+                if(y<= unstable_repeat_num):
+                    plot_unit.append(y)
+
+            
+            figure, axis = plt.subplots(1, 2,figsize =(12, 5))
+            axis[0].set_title("NMI Score")               
+            axis[1].set_title("ARI Score")
+
+            #print("all_train_score_W0_n len {}".format(len(all_train_score_W0_n)))
+           # print("plot_unit {}".format(plot_unit))
+
+            axis[0].set_xlabel('Repeat number')
+            axis[0].plot(plot_unit,all_train_score_W0_n,'r',label ='all_train_score_W0')
+            axis[0].plot(plot_unit,all_train_score_W_combine_n,'c',label ='all_train_score_W\'')
+            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score_W1')
+            axis[0].plot(plot_unit,test_score_W_combine_n,'k',label ='test_score_W\'')
+            axis[0].legend(loc='best')
+
+
+
+            axis[1].set_xlabel('Repeat number')
+            axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score_W0')
+            axis[1].plot(plot_unit,all_train_score_W_combine_a,'c',label ='all_train_score_W\'')
+            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score_W1')
+            axis[1].plot(plot_unit,test_score_W_combine_a,'k',label ='test_score_W\'')
+         
+            axis[1].legend(loc='best')
+            plt.show()
+            
+           # print("New Neuron Number : {}".format (int(np.mean(new_neuron_num))))
+                                                    
+                        
+            df1_n = pd.DataFrame(test_score_W0_n, columns = ['test_score_W0'])
+            df2_n = pd.DataFrame(test_score_W_combine_n, columns = ['test_score_W\''])
+
+            df3_n = pd.DataFrame(all_train_score_W0_n, columns = ['train_score_W0'])
+            df4_n = pd.DataFrame(all_train_score_W_combine_n, columns = ['train_score_W\''])
+
+            summary, results = rp.ttest(group1= df1_n['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_n['test_score_W\''], group2_name= "test_score_W\'")
+            
+            print("NMI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_n, test_score_W_combine_n,alternative = 'less')
+
+            summary1, results1 = rp.ttest(group1= df3_n['train_score_W0'], group1_name= "train_score_W0",
+                                        group2= df4_n['train_score_W\''], group2_name= "train_score_W\'")
+            
+           # print(summary1)
+            #print(results1)
+
+            #stats.ttest_ind(all_train_score_W0_global_n, all_train_score_W_combine_global_n,alternative = 'less')
+
+
+
+            df1_a = pd.DataFrame(test_score_W0_a, columns = ['test_score_W0'])
+            df2_a = pd.DataFrame(test_score_W_combine_a, columns = ['test_score_W\''])     
+            df3_a = pd.DataFrame(all_train_score_W0_a, columns = ['train_score_W0'])
+            df4_a = pd.DataFrame(all_train_score_W_combine_a, columns = ['train_score_W\''])
+
+            summary, results = rp.ttest(group1= df1_a['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_a['test_score_W\''], group2_name= "test_score_W\'")
+            
+            print("ARI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_a, test_score_W_combine_a,alternative = 'less')
+
+            summary1, results1 = rp.ttest(group1= df3_n['train_score_W0'], group1_name= "train_score_W0",
+                                        group2= df4_n['train_score_W\''], group2_name= "train_score_W\'")
+            
+            #print(summary1)
+            #print(results1)
+
+            #stats.ttest_ind(all_train_score_W0_global_a, all_train_score_W_combine_global_a,alternative = 'less')
