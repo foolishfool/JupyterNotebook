@@ -305,9 +305,7 @@ class Experiment():
 
         
 
-        def UTtest(self,dataread, class_num,dim_num,scope_num,unstable_repeat_num):
-            new_neuron_num = []
-              
+        def UTtest(self,dataread,label_train,class_num,dim_num,best_num,scope_num,unstable_repeat_num,type,elbow_num):
             
             all_train_score_W0_n =[]
             all_train_score_W_combine_n =[]
@@ -321,60 +319,87 @@ class Experiment():
             test_score_W_combine_a = []
 
 
-            y = 1
+          
             plot_unit = [1]
-
-            while y <= unstable_repeat_num:
-
-                #print("neuron unit number: {}".format(class_num*x))
-                #print("*******************\n")
-                som = newSom.SOM(m= class_num, n= scope_num, dim=dim_num)  
-                optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,class_num)
-                optimize_W.run(dataread.data_train,dataread.label_train)
-
-
-                all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
-                all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
-                test_score_W0_n.append(optimize_W.test_score_W0_n)
-                test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
-
-
-                all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
-                all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
-                test_score_W0_a.append(optimize_W.test_score_W0_n)
-                test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
-     
-
-
-                #new_neuron_num.append(optimize_W.combinedweight.shape[0])
-
-                
-                
-                y =y+1
-                if(y<= unstable_repeat_num):
-                    plot_unit.append(y)
-
             
+            if type == 0:
+                y = class_num
+                while y <= scope_num:
+                    print("neuron unit number: {}".format(y))
+                    if y % 2 == 0:
+                        som = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
+                    else:
+                     som = newSom.SOM(m= y , n= 1, dim=dim_num)  
+                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,elbow_num)
+                                    
+                    optimize_W.run()
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
+
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
+        
+                    y =y+1
+                    if(y<= scope_num):
+                        plot_unit.append(y)
+            
+            
+            if type == 1:
+                y = 1
+                while y <= unstable_repeat_num:
+                    if best_num % 2 == 0:
+                        som = newSom.SOM(m= int(best_num/2), n= int(best_num/2) , dim=dim_num)  
+                    else:
+                        som = newSom.SOM(m= best_num , n= 1, dim=dim_num)  
+
+                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,elbow_num)
+                    optimize_W.run()
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
+
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
+        
+                    y =y+1
+                    if(y<= unstable_repeat_num):
+                        plot_unit.append(y)
+                
+                        
             figure, axis = plt.subplots(1, 2,figsize =(12, 5))
             axis[0].set_title("NMI Score")               
             axis[1].set_title("ARI Score")
 
             #print("all_train_score_W0_n len {}".format(len(all_train_score_W0_n)))
            # print("plot_unit {}".format(plot_unit))
-
-            axis[0].set_xlabel('Repeat number')
+            if type == 0:
+                axis[0].set_xlabel('Neuron number')
+            if type == 1:
+                axis[0].set_xlabel('Repeat number')
             axis[0].plot(plot_unit,all_train_score_W0_n,'r',label ='all_train_score_W0')
             axis[0].plot(plot_unit,all_train_score_W_combine_n,'c',label ='all_train_score_W\'')
-            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score_W1')
+            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score_W0')
             axis[0].plot(plot_unit,test_score_W_combine_n,'k',label ='test_score_W\'')
             axis[0].legend(loc='best')
 
 
 
-            axis[1].set_xlabel('Repeat number')
+            if type == 0:
+                axis[1].set_xlabel('Neuron number')
+            if type == 1:
+                axis[1].set_xlabel('Repeat number')
             axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score_W0')
             axis[1].plot(plot_unit,all_train_score_W_combine_a,'c',label ='all_train_score_W\'')
-            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score_W1')
+            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score_W0')
             axis[1].plot(plot_unit,test_score_W_combine_a,'k',label ='test_score_W\'')
          
             axis[1].legend(loc='best')

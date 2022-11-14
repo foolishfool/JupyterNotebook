@@ -195,7 +195,10 @@ class TDSM_SOM():
                         if(category == 2):
                             newlist.append(self.error_data_labels[split_number][idx])
                         if(category == 3):
-                            newlist.append(self.test_label[idx])        
+                            newlist.append(self.test_label[idx])   
+                        # used for validation, which alreay get the self.right_datas[split_number] and want to cluster the predicted_label
+                        if(category == 4):
+                            newlist.append(idx)             
                
                 clusters_labels.append(newlist) 
                 if(category == 1):
@@ -482,6 +485,32 @@ class TDSM_SOM():
         self.nmiScore(scorename,y_true,y_pred)
         self.ariScore(scorename,y_true,y_pred)
 
+    def getRightdataDistribution(self, split_number,predicted_class_label):           
+        grouped_cluster_indexes = self.get_indices_in_clusters(self.som.weights1.shape[0],4,predicted_class_label,split_number)
+        for i in range(0, len(grouped_cluster_indexes)):
+            unit_list= []
+            distances = []
+            distances1 = []
+            current_cluster_data = []
+            for j in range(0, len(grouped_cluster_indexes[i])):
+                current_cluster_data.append(self.right_datas[split_number][j])
+        
+            for j in range(0, len(grouped_cluster_indexes[i])):
+                unit_list.append(j)
+            # type 0 distance to belonged neuron, 1
+                #print("len self.right_datas[split_number][j] {}".format(self.right_datas[split_number][j]))
+                distances.append(np.linalg.norm((self.right_datas[split_number][j] -self.som.weights1[predicted_class_label[j]] ).astype(float)))
+                distances1.append(np.linalg.norm((self.right_datas[split_number][j] - np.mean(current_cluster_data, axis=0)).astype(float), axis=0))
+           # distances = np.sort(distances)
+            #distances1 = np.sort(distances1)
+            if  unit_list!= [] and len(unit_list) >1 :
+                plt.xlabel('data number in cluster {}'.format(len(unit_list)))
+                plt.plot(unit_list,distances,'g',label ='distance to cluster center')
+                plt.plot(unit_list,distances1,'b',label ='distance to cluster mean')
+                plt.legend()
+                plt.show()  
+
+
     def run(self):
         """
         score_type 0 purity 1 numi 2 rai
@@ -573,6 +602,9 @@ class TDSM_SOM():
             print("right_data{}_score_W0 purity {} ".format(current_split_number,self.right_data_score_W0_p[current_split_number]))
             print("right_data{}_score_W0 nmi {} ".format(current_split_number,self.right_data_score_W0_n[current_split_number]))
             print("right_data{}_score_W0 api {} ".format(current_split_number,self.right_data_score_W0_a[current_split_number]))
+
+
+            self.getRightdataDistribution(current_split_number,transferred_predicted_label_right_data)
             
             if(current_split_number == 0):
                 self.data_train_error_datas =  np.array([np.take(current_data_train, reduced_indices_sorted,axis=0)], dtype=object)
@@ -648,6 +680,9 @@ class TDSM_SOM():
             print("right_data{}_score_W\' purity {} ".format(current_split_number,self.right_data_score_W_combine_p[current_split_number]))
             print("right_data{}_score_W\' nmi {} ".format(current_split_number,self.right_data_score_W_combine_n[current_split_number]))
             print("right_data{}_score_W\' api {} ".format(current_split_number,self.right_data_score_W_combine_a[current_split_number]))
+
+
+            
                         #_________ update current_data_train and current_label_train
             
             print("Finish one round splitting {} *********\n".format(current_split_number))
