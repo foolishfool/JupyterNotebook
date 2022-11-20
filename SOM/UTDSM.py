@@ -2,7 +2,7 @@
 Script to implement simple self organizing map using PyTorch, with methods
 similar to clustering method in sklearn.
 #TODO  only do the intra community 
-find intra communiyt in each neuron memberships and do the whole mapping and retest
+find intra communiyt in each neuron memberships and do the whole mapping and retest 
 """
 from asyncio.windows_events import NULL
 from distutils.errors import DistutilsArgError
@@ -71,10 +71,7 @@ class UTDSM_SOM():
 
         self.all_split_datas = []
         self.all_split_datas_indexes = []
-        
 
-    
-       
 
         self.newmappings = []   
         self.all_left_train_data_label = np.arange(len(self.train_label))
@@ -490,7 +487,7 @@ class UTDSM_SOM():
 
     def getScore(self,scorename, y_true, y_pred):
         #print(scorename)
-       # self.purity_score(scorename,y_true,y_pred)
+        self.purity_score(scorename,y_true,y_pred)
         self.nmiScore(scorename,y_true,y_pred)
         self.ariScore(scorename,y_true,y_pred)
 
@@ -554,8 +551,8 @@ class UTDSM_SOM():
         #print("transferred_predicted_label_train_W0 {}".format(transferred_predicted_label_train_W0))
        
         if self.all_split_datas == []:
-            print("transferred_predicted_label_train_W0 {}".format(transferred_predicted_label_train_W0))
-            print("self.train_labe {}".format(self.train_label))
+            #print("transferred_predicted_label_train_W0 {}".format(transferred_predicted_label_train_W0))
+           # print("self.train_labe {}".format(self.train_label))
             self.getScore("all_train_score_W0",self.train_label,transferred_predicted_label_train_W0)
             self.test_W0_predicted_label = self.som.predict(self.data_test,weight0)   
             transferred_predicted_label_test_W0 = self.transferClusterLabelToClassLabel(False,weight0.shape[0],self.test_W0_predicted_label,self.data_test)    
@@ -578,19 +575,17 @@ class UTDSM_SOM():
                 #*** check if current_check_node is in other community
                 already_in_community = False
    
-                for k in range(0,len(newclustered_datas)):
-                    if  current_check_node in np.array(newclustered_datas[k]):
-                        already_in_community = True              
-                        break
+                #for k in range(0,len(newclustered_datas)):
+                if  current_check_node in np.array(newclustered_datas):
+                    already_in_community = True              
+                    break
                 
                 if already_in_community :
                     continue
 
 
-                
-                newclustered_data = []
-                new_predicted_clusters = []
-     
+    
+                """
                 for j in range(0,len(searched_datas)):
                     if j != i:
                         sorted_dict_inter, distances_inter =  self.get_allnode_distance_in_a_group(current_check_node,predicted_clusters[j],weight0[j])
@@ -609,7 +604,7 @@ class UTDSM_SOM():
                                current_clustered_datas[j] = list(self.data_train[predicted_clusters[j]])
                             else:
                                 current_clustered_datas[j] =[]
-
+                """
                 sorted_dict_intra, distances_intra =  self.get_allnode_distance_in_a_group(current_check_node,predicted_clusters[i],weight0[i])
                 #print(" i {}".format( i))
 
@@ -618,13 +613,13 @@ class UTDSM_SOM():
                 #print(" predicted_clusters[i] initial {}".format( predicted_clusters[i]))
                 if a1!=[]:
                     for item1 in a1:
-                        newclustered_data.append(item1)    
+                        newclustered_datas.append(item1)    
                
                 if b1!=[]:
                     #print(" b1 {}".format( b1))
                     for item in b1:
                         predicted_clusters[i].remove(item)
-                        new_predicted_clusters.append(item)
+                        newclustered_datas_index.append(item)
                         del self.rest_data_predicted_label_dict[item]
                        # print("delete item {}".format(item))
                   
@@ -634,20 +629,24 @@ class UTDSM_SOM():
                     else:
                         current_clustered_datas[i] =[]                      
                  # add current data to the community generated
-                if a!=[] or a1!=[]:
-                     newclustered_data.append(current_check_node)
-                     new_predicted_clusters.append(farthest_intra_node_index)
+               # if a!=[] or a1!=[]:
+                if a1!=[]:
+                     newclustered_datas.append(current_check_node)
+                     newclustered_datas_index.append(farthest_intra_node_index)
                      del self.rest_data_predicted_label_dict[farthest_intra_node_index]
                      #print("delete item {}".format(farthest_intra_node_index))
                      #*** remove current_check_node
                      predicted_clusters[i].remove(farthest_intra_node_index)
                      current_clustered_datas[i] = list(self.data_train[predicted_clusters[i]] )
 
-                newclustered_data = np.array(newclustered_data)
+                
+                newclustered_datas_true_label = [] 
+                for item in newclustered_datas_index:
+                    newclustered_datas_true_label.append(self.train_label[item])
 
-                if newclustered_data != []:
-                    newclustered_datas.append(newclustered_data)
-                    newclustered_datas_index.append(new_predicted_clusters)
+                #if newclustered_data != []:
+                #    newclustered_datas.append(newclustered_data)
+                #    newclustered_datas_index.append(new_predicted_clusters)
                     #print("self.newclustered_datas 2 {}".format(self.newclustered_datas))
 
 
@@ -660,8 +659,10 @@ class UTDSM_SOM():
                 self.all_split_datas.append(item)
         print("len  self.all_split_datas {}".format(len( self.all_split_datas)))
         #self.test_rest_data(predicted_clusters,current_clustered_datas,weight0)
-        self.test_rest_data_one_time(predicted_clusters,current_clustered_datas,self.som.weights0)
-        self.test_combineW() 
+       # self.test_rest_data_one_time(predicted_clusters,newclustered_datas,self.som.weights0)
+        newclustered_datas = np.array(newclustered_datas)
+        self.test_new_generated_data(newclustered_datas_true_label,newclustered_datas,weight0)
+       # self.test_combineW() 
         #if self.elbowed_time < self.elbow_num:
             
         #for i in range(0,len(predicted_clusters)):
@@ -806,8 +807,22 @@ class UTDSM_SOM():
         while   self.all_left_train_data_label !=[]:
             self.run(self.all_left_train_data_label)
 
+
+    def test_new_generated_data(self,generated_data_true_label,current_clustered_datas,weight0):
+        self.newgenerated_W0_predicted_label = self.som.predict(current_clustered_datas,weight0)   
+
+
+        predicted_clusters, current_clustered_datas = self.get_indices_in_predicted_clusters(self.som.m*self.som.n, self.newgenerated_W0_predicted_label)   
+        # predicted_clusters  [[23,31,21,2],[1,3,5,76],[45,5,12]] index in data_train in some situation, it will have [] 
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters) ,0)  
+        # the value in predicted_clusters are true label value       
+        new_generated_data_W0 =  self.convertPredictedLabelValue(self.newgenerated_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W0)   
+         #restdata_W0_predicted_label = self.som.predict(data_rest,weight0)   
+
+        self.getScore("rest_score_W0",generated_data_true_label,new_generated_data_W0)
+
     def test_rest_data_one_time(self,predicted_clusters,current_clustered_datas,weight0):
-        print("predicted_clusters {}".format(predicted_clusters))
+     #   print("predicted_clusters {}".format(predicted_clusters))
        # self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters) ,0)  
         data_rest = []
         for item in current_clustered_datas:
