@@ -250,10 +250,10 @@ class DATAREAD():
          self.label_train = label_train.to_numpy(dtype=np.float64)
          self.label_test = label_test.to_numpy(dtype=np.float64)
 
-        # scaler = StandardScaler().fit(self.data_train)
-       #  self.data_train = scaler.transform(self.data_train)
-        # scaler2 = StandardScaler().fit(self.data_test)
-        # self.data_test = scaler2.transform(self.data_test)
+         scaler = StandardScaler().fit(self.data_train)
+         self.data_train = scaler.transform(self.data_train)
+         scaler2 = StandardScaler().fit(self.data_test)
+         self.data_test = scaler2.transform(self.data_test)
 
 
 

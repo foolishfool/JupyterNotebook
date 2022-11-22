@@ -305,7 +305,7 @@ class Experiment():
 
         
 
-        def UTtest(self,dataread,label_train,class_num,dim_num,best_num,scope_num,unstable_repeat_num,type,elbow_num):
+        def UTtest(self,dataread,label_train,class_num,dim_num,best_num,scope_num,unstable_repeat_num,type,elbow_num , row,column):
             
             all_train_score_W0_n =[]
             all_train_score_W_combine_n =[]
@@ -330,19 +330,19 @@ class Experiment():
                         som = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
                     else:
                      som = newSom.SOM(m= y , n= 1, dim=dim_num)  
-                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,elbow_num)
+                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,elbow_num,row,column)
                                     
                     optimize_W.run()
                     all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
-                    #all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
+                    all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
                     test_score_W0_n.append(optimize_W.test_score_W0_n)
-                    #test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
+                    test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
 
 
                     all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
-                    #all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
+                    all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
                     test_score_W0_a.append(optimize_W.test_score_W0_n)
-                    #test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
+                    test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
         
                     y =y+1
                     if(y<= scope_num):
@@ -357,18 +357,18 @@ class Experiment():
                     else:
                         som = newSom.SOM(m= best_num , n= 1, dim=dim_num)  
 
-                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,elbow_num)
+                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,elbow_num,row,column)
                     optimize_W.run()
                     all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
-                    #all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
+                    all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
                     test_score_W0_n.append(optimize_W.test_score_W0_n)
-                   # test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
+                    test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
 
 
                     all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
-                   # all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
+                    all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
                     test_score_W0_a.append(optimize_W.test_score_W0_n)
-                    #test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
+                    test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
         
                     y =y+1
                     if(y<= unstable_repeat_num):
