@@ -535,12 +535,12 @@ class UTDSM_SOM():
         
         """
         # true distributon
-        
+        """
         self.cluster_data_based_true_label()
         print("True Distribution : ")
         for i in range(0,len(self.all_true_clustered_datas_indexes)) :
             self.drawnormaldistributonplot(self.all_true_clustered_datas_indexes[i],i,"green")
-        
+        """
         self.som.fit(self.data_train)
         weight0 = self.som.weights0
 
@@ -612,7 +612,7 @@ class UTDSM_SOM():
                                 predicted_clusters[j].remove(item)
                                 new_predicted_clusters.append(item)
                                 del self.rest_data_predicted_label_dict[item]
-                                #print("delete item 1 {}".format(item))
+                                #print("put item 1 in community {}".format(item))
                             if predicted_clusters[j] != []: 
                                current_clustered_datas[j] = list(self.data_train[predicted_clusters[j]])
                             else:
@@ -634,7 +634,7 @@ class UTDSM_SOM():
                         predicted_clusters[i].remove(item)
                         new_predicted_clusters.append(item)
                         del self.rest_data_predicted_label_dict[item]
-                        #print("delete item 2 {}".format(item))
+                        #print("put item 2 in community {}".format(item))
                   
                     current_clustered_datas[i] = np.array(current_clustered_datas[i])                  
                     if predicted_clusters[i] != [] :
@@ -646,7 +646,7 @@ class UTDSM_SOM():
                      newclustered_data.append(current_check_node)
                      new_predicted_clusters.append(farthest_intra_node_index)
                      #print("rest_data_predicted_label_dict {}".format(self.rest_data_predicted_label_dict))
-                    # print("delete farthest_intra_node_index  node {}".format(farthest_intra_node_index))
+                     #print("put farthest_intra_node_index  node  in commuity{}".format(farthest_intra_node_index))
                      del self.rest_data_predicted_label_dict[farthest_intra_node_index]
                     
                      #*** remove current_check_node
@@ -681,20 +681,17 @@ class UTDSM_SOM():
 
         
         
-        for i in range(0,len(self.all_split_datas_indexes)):
-            #print ("cluster index  number {}".format(len(self.all_split_datas_indexes[i])))
-            self.drawnormaldistributonplot(self.all_split_datas_indexes[i],i,"blue")
+        #for i in range(0,len(self.all_split_datas_indexes)):
+        #    print ("cluster index  number {}".format(len(self.all_split_datas_indexes[i])))
+        #    self.drawnormaldistributonplot(self.all_split_datas_indexes[i],i,"blue")
 
        # print("len self.all_split_datas 1 {}".format(len(self.all_split_datas)))
         self.delete_multiple_element(self.all_split_datas,self.outliner_clusters)
         self.delete_multiple_element(self.all_split_datas_indexes,self.outliner_clusters)
        # print("len self.all_split_datas 2 {}".format(len(self.all_split_datas)))
 
-        self.test_optimized_clusters()
+        #self.test_optimized_clusters()
         
-        
-
-
         self.test_combineW()         
       
 
@@ -715,7 +712,7 @@ class UTDSM_SOM():
             for item in self.all_split_datas_indexes[i]:
                 generated_data_predict_label.append(i)
                 generated_data_true_label.append(self.train_label[item])
-            print("optimized neurons test {}".format(i))
+           # print("optimized neurons test {}".format(i))
             self.all_split_datas[i] = np.array(self.all_split_datas[i])
            # print("generated_data_predict_label {}".format(generated_data_predict_label))
            #print("generated_data_true_label {}".format(generated_data_true_label))
@@ -897,7 +894,7 @@ class UTDSM_SOM():
 
     def drawnormaldistributonplot(self, predicted_clusters_index, i,color):
         #print("predicted_clusters_index {}".format(predicted_clusters_index))
-        if len(predicted_clusters_index) >=30:
+        if len(predicted_clusters_index) >=1:
             print("neuron data  **************** {}".format(i))
             total_data_in_each_dim = []
             for i in range(0,self.som.dim):
@@ -910,8 +907,8 @@ class UTDSM_SOM():
                     total_data_in_each_dim[i].append(data[i])
            # print("total_data_in_each_dim 2 {}".format(total_data_in_each_dim))
             if self.row != 1:
-                fig, axs = plt.subplots(self.row, self.column,figsize=(8, 8))
-            else: fig, axs = plt.subplots(1, self.column,figsize=(8, 8))
+                fig, axs = plt.subplots(self.row, self.column,figsize=(12, 12))
+            else: fig, axs = plt.subplots(1, self.column,figsize=(12, 12))
             for i in range(0,self.som.dim):
                 x_axis = total_data_in_each_dim[i]
                 if self.row != 1:
