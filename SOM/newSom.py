@@ -224,7 +224,7 @@ class SOM():
                 self.step(input)
                 # Update learning rate
                 global_iter_counter += 1
-                lr = (1 - (global_iter_counter / total_iterations)) * self.initial_lr
+                self.lr = (1 - (global_iter_counter / total_iterations)) * self.initial_lr
     
         # Compute inertia
           
