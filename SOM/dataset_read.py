@@ -232,6 +232,31 @@ class DATAREAD():
             else: 
                 print("Unkonwn value {}".format(X.at[i,name]))
                 
+
+    def removeminorpartdata(self,Label,Data):
+        allindexes = {}
+       # print("Label {}".format(Label))   
+        for i in Label.index:    
+           # print("i {}".format(i))    
+            if Label[i] in allindexes:
+               # print("i {}".format(i))   
+              #  print("allindexes {}".format(allindexes))   
+               # print("Label[i] {}".format(Label[i]))   
+                allindexes[Label[i]].append(i)
+            else: 
+                allindexes[Label[i]] = []
+             
+        print(" Label1 {}".format(len(Label)))  
+        for item in allindexes.values():         
+            if len(item) < 10:
+              # print("item {}".format(item))
+               Label = Label.drop(item)
+               Data = Data.drop(item)
+        self.cleanedLabel = Label
+        self.cleanedData = Data
+        
+
+
     def initializedataset(self,X,Y,attributute):
          self.X = X.sample(n =X.shape[0])
          self.data_test =  Y
@@ -243,18 +268,55 @@ class DATAREAD():
          label_test = data_test[attributute]
          data_train = data_train.drop(attributute,axis = 1)
          data_test = data_test.drop(attributute,axis = 1)
-         
+
+         #print("label_train len1 {}".format(len(label_train)))
+
+         self.removeminorpartdata(label_train,data_train)
+         #print(" self.refinedLabel  len {}".format(len( self.refinedLabel )))
+        # print("self.refinedData len2 {}".format(len(self.refinedData)))
+       
+         self.data_continuous_indexes = []
+         self.data_discrete_indexes = []
+    
+         for (column_name, column) in data_train.transpose().iterrows():
+            if len(X[column_name].unique())>10: 
+                self.data_continuous_indexes.append(column_name)
+              #  print("continuous label : {}".format(column_name))
+            else: 
+                self.data_discrete_indexes.append(column_name)
+              #  print("discrete label : {}".format(column_name))
+    
+
+         data_train_continuous = data_train[self.data_continuous_indexes]
+         data_train_discrete = data_train[self.data_discrete_indexes]  
+         data_test_continuous = data_test[self.data_continuous_indexes]
+         data_test_discrete = data_test[self.data_discrete_indexes]  
+
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)
          self.data_test = data_test.to_numpy(dtype=np.float64)
          self.label_train = label_train.to_numpy(dtype=np.float64)
          self.label_test = label_test.to_numpy(dtype=np.float64)
+         self.data_train_continuous = data_train_continuous.to_numpy(dtype=np.float64)
+         self.data_train_discrete = data_train_discrete.to_numpy(dtype=np.float64)
+         self.data_test_continuous = data_test_continuous.to_numpy(dtype=np.float64)
+         self.data_test_discrete = data_test_discrete.to_numpy(dtype=np.float64)
 
          scaler = StandardScaler().fit(self.data_train)
          self.data_train = scaler.transform(self.data_train)
          scaler2 = StandardScaler().fit(self.data_test)
          self.data_test = scaler2.transform(self.data_test)
+         scaler3 = StandardScaler().fit(self.data_train_continuous)
+         self.data_train_continuous = scaler3.transform(self.data_train_continuous)
+         scaler4 = StandardScaler().fit(self.data_test_continuous)
+         self.data_test_continuous = scaler4.transform(self.data_test_continuous)
+         scaler5 = StandardScaler().fit(self.data_test_discrete)
+         self.data_test_discrete = scaler5.transform(self.data_test_discrete)
+         scaler6 = StandardScaler().fit(self.data_train_discrete)
+         self.data_train_discrete = scaler6.transform(self.data_train_discrete)
 
+
+        # discrete data do not use scaler
 
 
     def initializedataset_frog(self,X,Y):

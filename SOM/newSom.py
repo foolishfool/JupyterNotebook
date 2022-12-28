@@ -13,7 +13,7 @@ import numpy as np
 from mayavi import mlab
 from scipy import spatial
 
-
+from scipy.spatial import distance
 class SOM():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
@@ -103,8 +103,17 @@ class SOM():
         return np.argmin(distance)
 
 
+    def _find_bmu_hamming(self,x, newWeights):
+        hamming_distances =[]
+        for i in range(0,newWeights.shape[0] ):
+            hdistance = distance.hamming(x, newWeights[i])
+            hamming_distances.append(hdistance)
+        
+        mindex = min(hamming_distances)
 
-   
+        return hamming_distances.index(mindex)
+
+
 
 
     
@@ -150,7 +159,46 @@ class SOM():
        # print("weights:{}".format(self.weights))
         # Update weights
         self.weights += delta
-       
+
+
+    def step_hamming(self,x):
+        """
+        Do one step of training on the given input vector.
+        """
+        #print(x)
+        # Stack x to have one row per weight 
+        x_stack = np.stack([x]*(self.m*self.n), axis=0)
+        # x_stack , with mxn row , each row has the same array: x
+        # Get index of best matching unit
+        bmu_index = self._find_bmu_hamming(x,self.weights)
+        #print("bmu_index{}".format(bmu_index));
+        # Find location of best matching unit, _locations is all the indices for a given matrix for array
+        # bmu_location is the bmu_indexth element in _locations, such as if bmu_index = 4 in [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]] it return [2,0]
+        bmu_location = self._locations[bmu_index,:]
+        #print("bmu_location{}".format(bmu_location));
+        # Find square distance from each weight to the BMU
+        #print("[bmu_location]*(m*n){}".format([bmu_location]*(m*n)));
+        stacked_bmu = np.stack([bmu_location]*(self.m*self.n), axis=0)
+        #print("stacked_bmu: {}".format(stacked_bmu))
+        #the distance among unit is calcuated by the distance among unit's indices
+        #bmu_distance is an array with distance to each unit
+        bmu_distance = np.sum(np.power(self._locations.astype(np.float64) - stacked_bmu.astype(np.float64), 2), axis=1)
+       # print("bmu_distance:{}".format(bmu_distance))
+        # Compute update neighborhood
+        neighborhood = np.exp((bmu_distance / (self.sigma ** 2)) * -1)
+       # print("neighborhood:{}".format(neighborhood))
+        #local_step is an array with stepchanges to each unit
+        local_step = self.lr * neighborhood
+        #print("local_step:{}".format(local_step))
+        # Stack local step to be proper shape for update
+        local_multiplier = np.stack([local_step]*(self.dim), axis=1)
+        #print("local_multiplier:{}".format(local_multiplier))
+        # Multiply by difference between input and weights
+        delta = local_multiplier * (x_stack - self.weights).astype(float)
+        #print("delta:{}".format(delta))
+       # print("weights:{}".format(self.weights))
+        # Update weights
+        self.weights += delta
     
     def _compute_point_intertia(self, x):
         """
@@ -244,6 +292,83 @@ class SOM():
             self.weights1 = copy.deepcopy(self.weights)
 
         return
+
+    def fit_hamming( self, X, weightIndex = 0,epochs=1, shuffle=True):
+        """
+        Take data (a tensor of type float64) as input and fit the SOM to that
+        data for the specified number of epochs.
+        Parameters
+        ----------
+        X : ndarray
+            Training data. Must have shape (n, self.dim) where n is the number
+            of training samples.
+        epochs : int, default=1
+            The number of times to loop through the training data when fitting.
+        shuffle : bool, default True
+            Whether or not to randomize the order of train data when fitting.
+            Can be seeded with np.random.seed() prior to calling fit.
+        Returns
+        -------
+        None
+            Fits the SOM to the given data but does not return anything.
+        """
+
+        global_iter_counter = 0
+    # the number of samples   
+        n_samples = X.shape[0] 
+        total_iterations = np.minimum(epochs * n_samples, self.max_iter)
+        for epoch in range(epochs):
+            # Break if past max number of iterations
+            if global_iter_counter > self.max_iter:
+                break
+
+            if shuffle:
+                rng = np.random.default_rng(self.random_state)
+                indices = rng.permutation(n_samples)
+                #print("indices1 {}".format(indices))
+                # permute the index of samples
+                indices = np.array(indices)
+                #print("indices2 {}".format(indices))
+            else:
+                indices = np.arange(n_samples)                       
+            
+
+         # Train
+            for idx in indices:
+
+             # Break if past max number of iterations
+                if global_iter_counter > self.max_iter:
+                    break
+                #print("idx =  {}  ".format( idx))
+                #print(X[idx] )
+                
+                input = X[idx]
+                #if (type(input) is np.float64):
+                #    input = [input]
+                # Do one step of training
+                self.step_hamming(input)
+                # Update learning rate
+                global_iter_counter += 1
+                self.lr = (1 - (global_iter_counter / total_iterations)) * self.initial_lr
+    
+        # Compute inertia
+          
+        inertia = np.sum(np.array([float(self._compute_point_intertia(x)) for x in X]))
+        #print("inertia {}".format(inertia))
+        self._inertia_ = inertia
+    
+    # Set n_iter_ attribute
+        self._n_iter_ = global_iter_counter
+
+    # Set trained flag
+        self.trained = True
+        if(weightIndex == 0):
+            self.weights0 = copy.deepcopy(self.weights)
+
+        if(weightIndex == 1):
+            self.weights1 = copy.deepcopy(self.weights)
+
+        return
   
     def predict(self,X, newWeights):
         """
@@ -274,7 +399,34 @@ class SOM():
         labels = np.array([self._find_bmu(x,newWeights) for x in X])
         return labels
 
-          
+    def predict_hamming(self,X, newWeights):
+        """
+        Predict cluster for each element in X.
+        Parameters
+        ----------
+        X : ndarray
+            An ndarray of shape (n, self.dim) where n is the number of samples.
+            The data to predict clusters for.
+        Returns
+        -------
+        labels : ndarray
+            An ndarray of shape (n,). The predicted cluster index for each item
+            in X.
+        """
+
+        #print("weights used:\n")
+        #print(newWeights)
+        # Check to make sure SOM has been fit
+        if not self.trained:
+            raise NotImplementedError('SOM object has no predict() method until after calling fit().')
+
+        # Make sure X has proper shape
+        #print("len(X.shape) {}".format(len(X.shape)))
+        assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
+        assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
+     
+        labels = np.array([self._find_bmu_hamming(x,newWeights) for x in X])
+        return labels      
 
     def transform(self, X):
         """

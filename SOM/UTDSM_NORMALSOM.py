@@ -31,18 +31,16 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score
 from kneed import KneeLocator
 
-class UTDSM_SOM():
+class UTDSM_NORMALSOM():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
     """
-    def __init__(self, som,som_continuous,som_discrete, 
+    def __init__(self, som,som_cleaned, 
                             data_train_all, 
-                            data_train_continuous,
-                            data_train_discrete,
+                            data_train_all_cleaned,
                             data_test_all,
-                            data_test_continuous,
-                            data_test_discrete,
-                            label_train_all,                       
+                            label_train_all,   
+                            label_train_all_cleaned,                    
                             label_test_all,
                             row,column):
         """
@@ -59,8 +57,8 @@ class UTDSM_SOM():
         """
 
         self.som = som  
-        self.som_continuous = som_continuous 
-        self.som_discrete = som_discrete 
+        self.som_cleaned = som_cleaned
+
         self.row = row
         self.column = column
         # initial cluster numbers in TDSM_SOM, which is the neuron number in som
@@ -68,37 +66,18 @@ class UTDSM_SOM():
 
 
         self.data_train_all = data_train_all
+        self.data_train_all_cleaned = data_train_all_cleaned
         self.data_test_all = data_test_all
 
-        self.data_train_continuous = data_train_continuous
-        self.data_train_discrete = data_train_discrete
-        
-        self.data_test_continuous = data_test_continuous
-
-        self.data_test_discrete = data_test_discrete
-
-
         self.train_label_all = label_train_all
+        self.label_train_all_cleaned = label_train_all_cleaned
         self.train_label_all = self.train_label_all.astype(int)
-
-
-
-
+        self.label_train_all_cleaned = self.label_train_all_cleaned.astype(int)
 
         self.test_label_all = label_test_all
         self.test_label_all = self.test_label_all.astype(int)
 
 
-        self.all_split_datas_continuous = []
-        self.all_split_datas_indexes_continuous = []
-        
-        self.all_split_datas_discrete = []
-        self.all_split_datas_indexes_discrete = []
-
-        self.outliner_clusters = []
-
-
-       # print("self.all_left_train_data_label  initial {}".format(len(self.all_left_train_data_label )))
     def purity_score(self,scorename, y_true, y_pred):
         # compute contingency matrix (also called confusion matrix)
         contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
@@ -125,6 +104,9 @@ class UTDSM_SOM():
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
             print("all_train_score_W0_n {}".format(self.all_train_score_W0_n ))  
+        if(scorename == "all_train_score_W0_cleaned" ):
+            self.all_train_score_W0_cleaned_n = normalized_mutual_info_score(y_true,y_pred)
+            print("all_train_score_W0_cleaned_n {}".format(self.all_train_score_W0_cleaned_n ))  
         if(scorename == "all_train_score_W_Combined" ):          
             self.all_train_score_W_Combined_n = normalized_mutual_info_score(y_true,y_pred)
             # if  self.all_train_score_W_Combined_n >= self.all_train_score_W0_n :
@@ -133,6 +115,9 @@ class UTDSM_SOM():
         if(scorename == "test_score_W0" ):
             self.test_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
             print("test_score_W0_n {}".format(self.test_score_W0_n ))  
+        if(scorename == "test_score_W0_cleaned" ):
+            self.test_score_W0_cleaned_n = normalized_mutual_info_score(y_true,y_pred)
+            print("test_score_W0_cleaned_n {}".format(self.test_score_W0_cleaned_n ))  
         if(scorename == "test_score_W_combined" ):
             self.test_score_W_Combined_n = normalized_mutual_info_score(y_true,y_pred)
             # if  self.test_score_W_Combined_n >= self.test_score_W0_n :
@@ -151,6 +136,9 @@ class UTDSM_SOM():
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_a = adjusted_rand_score(y_true,y_pred)
             print("all_train_score_W0_a {}".format(self.all_train_score_W0_a ))  
+        if(scorename == "all_train_score_W0_cleaned" ):
+            self.all_train_score_W0_cleaned_a = adjusted_rand_score(y_true,y_pred)
+            print("all_train_score_W0_cleaned_a {}".format(self.all_train_score_W0_cleaned_a ))  
         if(scorename == "all_train_score_W_Combined" ):
             self.all_train_score_W_Combined_a = adjusted_rand_score(y_true,y_pred)
             # if  self.all_train_score_W_Combined_a >= self.all_train_score_W0_a :
@@ -160,6 +148,9 @@ class UTDSM_SOM():
         if(scorename == "test_score_W0" ):
             self.test_score_W0_a = adjusted_rand_score(y_true,y_pred)
             print("test_score_W0_a  {}".format(self.test_score_W0_a ))  
+        if(scorename == "test_score_W0_cleaned" ):
+            self.test_score_W0_cleaned_a = adjusted_rand_score(y_true,y_pred)
+            print("test_score_W0_cleaned_a  {}".format(self.test_score_W0_cleaned_a ))  
         if(scorename == "test_score_W_combined" ):
             self.test_score_W_Combined_a = adjusted_rand_score(y_true,y_pred)
             print("test_score_W_combined_a {}".format(self.test_score_W_Combined_a ))  
@@ -630,24 +621,7 @@ class UTDSM_SOM():
         # winWindexlabels, labels = np.array([ for x in X])
         # labels will be always from 0 - (m*n)*stop_split_num-1
         return np.array(labels)
-    """
-    def predict_based_overlapped_splitdata(self,test_data_continuous, test_data_discrete):
 
-        assert len(test_data_continuous.shape) == 2, f'test_data_continuous should have two dimensions, not {len(test_data_continuous.shape)}'
-        assert len(test_data_discrete.shape) == 2, f'test_data_discrete should have two dimensions, not {len(test_data_discrete.shape)}'
-
-        labels =[]
-        for x in test_data_continuous:
-            a = self._find_belonged_neuron(x,self.all_split_datas_continuous)
-            for d in test_data_discrete:
-                b = self._find_belonged_discrete_neuron(d,self.all_split_datas_discrete)
-
-                key = str(a) + str(b)
-                labels.append(self.split_data_combination_index_dic[key])
-        # winWindexlabels, labels = np.array([ for x in X])
-        # labels will be always from 0 - (m*n)*stop_split_num-1
-        return np.array(labels)
-    """
 
 
     def predict_based_overlapped_splitdata(self,test_data_continuous, test_data_discrete):
@@ -737,9 +711,13 @@ class UTDSM_SOM():
         All data trained by som 
         """
         self.som.fit(self.data_train_all)
-        weight0 = self.som.weights0
+        self.som_cleaned.fit(self.data_train_all_cleaned)
+        weight0 = self.som_cleaned.weights0
+        weight0_cleaned = self.som.weights0
         self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight0)   
+        self.train_W0_predicted_label_cleaned = self.som_cleaned.predict(self.data_train_all_cleaned,weight0_cleaned)   
         predicted_clusters, current_clustered_datas = self.get_indices_in_predicted_clusters(self.som.m*self.som.n, self.train_W0_predicted_label,self.data_train_all)   
+        predicted_clusters_cleaned, current_clustered_datas_cleaned = self.get_indices_in_predicted_clusters(self.som_cleaned.m*self.som_cleaned.n, self.train_W0_predicted_label_cleaned,self.data_train_all_cleaned) 
         """predicted_clusters  [[23,31,21,2],[1,3,5,76],[45,5,12]] index in data_train in some situation, it will have [] """
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters) ,0)  
         # the value in predicted_clusters are true label value    
@@ -752,261 +730,18 @@ class UTDSM_SOM():
         self.getScore("test_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
 
 
-        """
-        *****************************************************************************************************************************************
-        continuous data trained by som 
-        """
-        # continuous
-        self.som_continuous.fit(self.data_train_continuous)
-        weight0 = self.som_continuous.weights0
-
-        # the new cluster data generated by finding community nodes
-        newclustered_datas = []
-        newclustered_datas_index = []
-
-        self.train_W0_predicted_label_continuous = self.som_continuous.predict(self.data_train_continuous,weight0)   
-       # print(" self.train_W0_predicted_label_continuous {}".format( self.train_W0_predicted_label_continuous))
-        predicted_clusters, current_clustered_datas = self.get_indices_in_predicted_clusters(self.som_continuous.m*self.som_continuous.n, self.train_W0_predicted_label_continuous,self.data_train_continuous)   
-             
-        searched_datas = copy.deepcopy(current_clustered_datas)
-        searched_datas = array(searched_datas).tolist()
-        """
-        for i in range(0,len(searched_datas)):
-            # get discasending fartheset node in current clustered_data
-            sorted_dict = self.split_continuous_data(predicted_clusters[i],  weight0[i])   
-            while len(sorted_dict) >0:    
-            
-                farthest_intra_node_index = self.getfarthest_intra_node_index(sorted_dict)
-                current_check_node = self.data_train_continuous[farthest_intra_node_index]
-               # print("farthest_intra_node_index  {}".format(farthest_intra_node_index))
-                del sorted_dict[farthest_intra_node_index]
-                #*** check if current_check_node is in other community
-                already_in_community = False
-   
-                for k in range(0,len(newclustered_datas)):
-                    if  current_check_node in np.array(newclustered_datas[k]):
-                     already_in_community = True        
-                   #  print("already in community ! {}".format(farthest_intra_node_index))      
-                     break
-                
-                if already_in_community :
-                    continue
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_cleaned) ,0)  
+        # the value in predicted_clusters are true label value    
+        transferred_predicted_label_train_W0_cleaned =  self.convertPredictedLabelValue(self.train_W0_predicted_label_cleaned,self.PLabel_to_Tlabel_Mapping_W0)      
+        self.getScore("all_train_score_W0_cleaned",self.train_label_all_cleaned,transferred_predicted_label_train_W0_cleaned)
 
 
-                newclustered_data =[]
-                new_predicted_clusters =[]
-                # get inter community nodes
-                for j in range(0,len(searched_datas)):
-                    if j != i:
-                        sorted_dict_inter, distances_inter =  self.get_allnode_distance_in_a_continuous_group(current_check_node,predicted_clusters[j],weight0[j])
-                        a,b = self.get_inter_continuous_community_nodes(sorted_dict_inter,distances_inter)
-                        if a != []:
-                            for item in a:
-                                newclustered_data.append(item)
-                      
-                        if b != []:
-                            for item in b:
-                                predicted_clusters[j].remove(item)
-                                new_predicted_clusters.append(item)
-                                #print("put item 1 in community {}".format(item))
-                            if predicted_clusters[j] != []: 
-                               current_clustered_datas[j] = list(self.data_train_continuous[predicted_clusters[j]])
-                            else:
-                                current_clustered_datas[j] =[]
- 
-                sorted_dict_intra, distances_intra =  self.get_allnode_distance_in_a_continuous_group(current_check_node,predicted_clusters[i],weight0[i])
-                #print(" i {}".format( i))
-
-                a1,b1 = self.get_intra_continuous_community_nodes(sorted_dict_intra,weight0[i])
-                #add self to the community
-                #print(" predicted_clusters[i] initial {}".format( predicted_clusters[i]))
-                if a1!=[]:
-                    for item1 in a1:
-                        newclustered_data.append(item1)    
-               
-                if b1!=[]:
-                    #print(" b1 {}".format( b1))
-                    for item in b1:
-                        predicted_clusters[i].remove(item)
-                        new_predicted_clusters.append(item)
-                  
-                    current_clustered_datas[i] = np.array(current_clustered_datas[i])                  
-                    if predicted_clusters[i] != [] :
-                        current_clustered_datas[i] = list(self.data_train_continuous[predicted_clusters[i]] )
-                    else:
-                        current_clustered_datas[i] =[]                      
-                 # add current data to the community generated
-                if a!=[] or a1!=[]:
-                     newclustered_data.append(current_check_node)
-                     new_predicted_clusters.append(farthest_intra_node_index)
-
-                    
-                     #*** remove current_check_node
-                     predicted_clusters[i].remove(farthest_intra_node_index)
-                     current_clustered_datas[i] = list(self.data_train_continuous[predicted_clusters[i]] )
-
-            
-
-                if newclustered_data != []:
-                    newclustered_datas.append(newclustered_data)
-                    newclustered_datas_index.append(new_predicted_clusters)
+        self.test_W0_predicted_label_cleaned = self.som_cleaned.predict(self.data_test_all,weight0_cleaned)   
+        transferred_predicted_label_test_W0_cleaned = self.transferClusterLabelToClassLabel(False,weight0_cleaned.shape[0],self.test_W0_predicted_label_cleaned,self.data_test_all)    
+        self.getScore("test_score_W0_cleaned",self.test_label_all,transferred_predicted_label_test_W0_cleaned)
 
 
-        """
-        for item in current_clustered_datas:
-            if item!=[]:
-                self.all_split_datas_continuous.append(item)
-                #for i in item:
-                #    print("len i {}".format(len(i)))
-        """
-        for item in newclustered_datas:
-            if item!=[]:
-                self.all_split_datas_continuous.append(item)
-               # for j in item:
-                #    print("len j {}".format(len(j)))   
-        """
-        for item in predicted_clusters:
-            if item!=[]:
-                self.all_split_datas_indexes_continuous.append(item)
-        """     
-        for item in newclustered_datas_index:
-            if item!=[]:
-                self.all_split_datas_indexes_continuous.append(item)
-        """
-       # print("  {}  {}".format( len(self.all_split_datas_indexes_continuous),self.som_continuous.weights0.shape[0]))
-
-        """
-        *****************************************************************************************************************************************
-        discrete data trained by som 
-        """
-        # continuous
-        self.som_discrete.fit_hamming(self.data_train_discrete)
-        weight0 = self.som_discrete.weights0
-
-        # the new cluster data generated by finding community nodes
-        newclustered_datas = []
-        newclustered_datas_index = []
-
-        self.train_W0_predicted_label_discrete = self.som_discrete.predict_hamming(self.data_train_discrete,weight0)   
-   
-        predicted_clusters, current_clustered_datas = self.get_indices_in_predicted_clusters(self.som_discrete.m*self.som_discrete.n, self.train_W0_predicted_label_discrete,self.data_train_discrete)   
-        """predicted_clusters  [[23,31,21,2],[1,3,5,76],[45,5,12]] index in data_train in some situation, it will have [] """
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters) ,0)  
-        # the value in predicted_clusters are true label value       
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W0_predicted_label_discrete,self.PLabel_to_Tlabel_Mapping_W0)       
-        
-        searched_datas = copy.deepcopy(current_clustered_datas)
-        searched_datas = array(searched_datas).tolist()
-        """
-        for i in range(0,len(searched_datas)):
-            # get discasending fartheset node in current clustered_data
-            sorted_dict = self.split_discrete_data(predicted_clusters[i],  weight0[i])   
-            while len(sorted_dict) >0:    
-            
-                farthest_intra_node_index = self.getfarthest_intra_node_index(sorted_dict)
-                current_check_node = self.data_train_discrete[farthest_intra_node_index]
-               # print("farthest_intra_node_index  {}".format(farthest_intra_node_index))
-                del sorted_dict[farthest_intra_node_index]
-                #*** check if current_check_node is in other community
-                already_in_community = False
-   
-                for k in range(0,len(newclustered_datas)):
-                    if  current_check_node in np.array(newclustered_datas[k]):
-                     already_in_community = True        
-                   #  print("already in community ! {}".format(farthest_intra_node_index))      
-                     break
-                
-                if already_in_community :
-                    continue
-
-
-                newclustered_data =[]
-                new_predicted_clusters =[]
-                # get inter community nodes
-                for j in range(0,len(searched_datas)):
-                    if j != i:
-                        sorted_dict_inter, distances_inter =  self.get_allnode_in_a_discrete_group(current_check_node,predicted_clusters[j],weight0[j])
-                        a,b = self.get_inter_discrete_community_nodes(sorted_dict_inter,distances_inter)
-                        if a != []:
-                            for item in a:
-                                newclustered_data.append(item)
-                      
-                        if b != []:
-                            for item in b:
-                                predicted_clusters[j].remove(item)
-                                new_predicted_clusters.append(item)
-                                #print("put item 1 in community {}".format(item))
-                            if predicted_clusters[j] != []: 
-                               current_clustered_datas[j] = list(self.data_train_discrete[predicted_clusters[j]])
-                            else:
-                                current_clustered_datas[j] =[]
- 
-                sorted_dict_intra, distances_intra =  self.get_allnode_in_a_discrete_group(current_check_node,predicted_clusters[i],weight0[i])
-                #print(" i {}".format( i))
-
-                a1,b1 = self.get_intra_discrete_community_nodes(sorted_dict_intra,weight0[i])
-                #add self to the community
-                #print(" predicted_clusters[i] initial {}".format( predicted_clusters[i]))
-                if a1!=[]:
-                    for item1 in a1:
-                        newclustered_data.append(item1)    
-               
-                if b1!=[]:
-                    #print(" b1 {}".format( b1))
-                    for item in b1:
-                        predicted_clusters[i].remove(item)
-                        new_predicted_clusters.append(item)
-                  
-                    current_clustered_datas[i] = np.array(current_clustered_datas[i])                  
-                    if predicted_clusters[i] != [] :
-                        current_clustered_datas[i] = list(self.data_train_discrete[predicted_clusters[i]] )
-                    else:
-                        current_clustered_datas[i] =[]                      
-                 # add current data to the community generated
-                if a!=[] or a1!=[]:
-                     newclustered_data.append(current_check_node)
-                     new_predicted_clusters.append(farthest_intra_node_index)
-
-                    
-                     #*** remove current_check_node
-                     predicted_clusters[i].remove(farthest_intra_node_index)
-                     current_clustered_datas[i] = list(self.data_train_discrete[predicted_clusters[i]] )
-
-            
-
-                if newclustered_data != []:
-                    newclustered_datas.append(newclustered_data)
-                    newclustered_datas_index.append(new_predicted_clusters)
-        """
-        for item in current_clustered_datas:
-            if item!=[]:
-                self.all_split_datas_discrete.append(item)
-
-        """         
-        for item in newclustered_datas:
-            if item!=[]:
-                self.all_split_datas_discrete.append(item)
-        """
-  
-        for item in predicted_clusters:
-            if item!=[]:
-                self.all_split_datas_indexes_discrete.append(item)
-
-        """          
-        for item in newclustered_datas_index:
-            if item!=[]:
-                self.all_split_datas_indexes_discrete.append(item)
-
-        """
-
-        """
-        ********************************************
-        test_combine W
-        """
-        self.get_combined_split_data()
-       # print("self.split_datas_indexes lne 1  {}".format(len(self.split_datas_indexes)))
-        self.test_combineW()         
-      
+       
    
 
     def delete_multiple_element(self,list_object, indices):

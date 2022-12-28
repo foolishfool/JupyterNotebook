@@ -7,6 +7,7 @@ from typing import List
 import newSom
 import TDSM_SOM
 import UTDSM
+import UTDSM_NORMALSOM
 import numpy as np
 from sklearn.metrics import silhouette_score
 import scipy.stats as stats
@@ -454,3 +455,360 @@ class Experiment():
             #print(results1)
 
             #stats.ttest_ind(all_train_score_W0_global_a, all_train_score_W_combine_global_a,alternative = 'less')
+
+        def UTtest_Discrete_Continuous( self,
+                                        dataread,
+                                        class_num,dim_num,
+                                        dim_num_continuous,
+                                        dim_num_discrete,
+                                        best_num,scope_num,
+                                        unstable_repeat_num,
+                                        type,
+                                        row,
+                                        column
+                                       ):
+            
+            all_train_score_W0_n =[]
+            all_train_score_W_combine_n =[]
+            test_score_W0_n = []
+            test_score_W_combine_n = []
+
+
+            all_train_score_W0_a =[]
+            all_train_score_W_combine_a =[]
+            test_score_W0_a = []
+            test_score_W_combine_a = []
+
+            all_train_score_W0_discrete_n =[]
+            all_train_score_W_combine_discrete_n =[]
+            test_score_W0__discrete_n = []
+            test_score_W_combine_discrete_n = []
+
+            
+            all_train_score_W0_continuous_n =[]
+            all_train_score_W_combine_continuous_n =[]
+            test_score_W0_continuous_n = []
+            test_score_W_combine_continuous_n = []
+
+            all_train_score_W0_continuous_a =[]
+            all_train_score_W_combine_continuous_a =[]
+            test_score_W0_continuous_a = []
+            test_score_W_combine_continuous_a = []
+          
+            plot_unit = [1]
+            
+            if type == 0:
+                y = class_num
+                while y <= scope_num:
+                    print("neuron unit number: {}".format(y))
+                    if y % 2 == 0:
+                        som = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
+                        som_continusous = newSom.SOM(m=int(y/2) , n= int(y/2), dim= dim_num_continuous)  
+                        som_discrete = newSom.SOM(m=int(y/2) , n= int(y/2), dim= dim_num_discrete)  
+                    else:
+                     som = newSom.SOM(m= y , n= 1, dim=dim_num)  
+                     som_continusous = newSom.SOM(m= y , n= 1, dim= dim_num_continuous)  
+                     som_discrete = newSom.SOM(m= y , n= 1, dim= dim_num_discrete)  
+                   # optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train_continuous,dataread.data_test_continuous,dataread.label_train_continuous,dataread.label_test_continuous,elbow_num,row,column)        
+                    optimize_W = UTDSM.UTDSM_SOM(som,
+                             som_continusous,
+                             som_discrete,
+                             dataread.data_train,
+                             dataread.data_train_continuous,
+                             dataread.data_train_discrete,
+                             dataread.data_test,
+                             dataread.data_test_continuous,
+                             dataread.data_test_discrete,
+                             dataread.label_train,
+                             dataread.label_test,
+                             row,column)                          
+                    optimize_W.run()
+
+                    all_train_score_W0_continuous_n.append(optimize_W.all_train_score_W0_n)
+                    all_train_score_W_combine_continuous_n.append(optimize_W.all_train_score_W_Combined_n)
+                    test_score_W0_continuous_n.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_continuous_n.append(optimize_W.test_score_W_Combined_n)
+
+
+                    all_train_score_W0_continuous_a.append(optimize_W.all_train_score_W0_a)
+                    all_train_score_W_combine_continuous_a.append(optimize_W.all_train_score_W_Combined_a)
+                    test_score_W0_continuous_a.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_continuous_a.append(optimize_W.test_score_W_Combined_a)
+
+
+        
+                    y =y+1
+                    if(y<= scope_num):
+                        plot_unit.append(y)
+            
+            
+            if type == 1:
+                y = 1
+                while y <= unstable_repeat_num:
+                    if best_num % 2 == 0:
+                        som = newSom.SOM(m= int(best_num/2), n= int(best_num/2) , dim=dim_num) 
+                        som_continusous = newSom.SOM(m=int(y/2) , n= int(y/2), dim= dim_num_continuous)  
+                        som_discrete = newSom.SOM(m=int(y/2) , n= int(y/2), dim= dim_num_discrete)   
+                    else:
+                        som = newSom.SOM(m= best_num , n= 1, dim=dim_num)  
+
+                    optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train,dataread.data_test,dataread.label_train,dataread.label_test,row,column)
+                    optimize_W.run()
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    all_train_score_W_combine_n.append(optimize_W.all_train_score_W_Combined_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_n.append(optimize_W.test_score_W_Combined_n)
+
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    all_train_score_W_combine_a.append(optimize_W.all_train_score_W_Combined_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_n)
+                    test_score_W_combine_a.append(optimize_W.test_score_W_Combined_a)
+        
+                    y =y+1
+                    if(y<= unstable_repeat_num):
+                        plot_unit.append(y)
+                
+                        
+            figure, axis = plt.subplots(1, 2,figsize =(12, 5))
+            axis[0].set_title("NMI Score")               
+            axis[1].set_title("ARI Score")
+
+            print("all_train_score_W0_n len {}".format(len(all_train_score_W0_n)))
+           # print("plot_unit {}".format(plot_unit))
+            if type == 0:
+                axis[0].set_xlabel('Neuron number')
+            if type == 1:
+                axis[0].set_xlabel('Repeat number')
+            
+            axis[0].plot(plot_unit,all_train_score_W0_n,'r',label ='all_train_score_W0')
+            axis[0].plot(plot_unit,all_train_score_W_combine_n,'c',label ='all_train_score_W\'')
+            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score_W0')
+            axis[0].plot(plot_unit,test_score_W_combine_n,'k',label ='test_score_W\'')
+            axis[0].legend(loc='best')
+
+
+
+            if type == 0:
+                axis[1].set_xlabel('Neuron number')
+            if type == 1:
+                axis[1].set_xlabel('Repeat number')
+            axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score_W0')
+            axis[1].plot(plot_unit,all_train_score_W_combine_a,'c',label ='all_train_score_W\'')
+            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score_W0')
+            axis[1].plot(plot_unit,test_score_W_combine_a,'k',label ='test_score_W\'')
+         
+            axis[1].legend(loc='best')
+            plt.show()
+            
+           # print("New Neuron Number : {}".format (int(np.mean(new_neuron_num))))
+                                                    
+                        
+            df1_n = pd.DataFrame(test_score_W0_n, columns = ['test_score_W0'])
+            df2_n = pd.DataFrame(test_score_W_combine_n, columns = ['test_score_W\''])
+
+            df3_n = pd.DataFrame(all_train_score_W0_n, columns = ['train_score_W0'])
+            df4_n = pd.DataFrame(all_train_score_W_combine_n, columns = ['train_score_W\''])
+
+            summary, results = rp.ttest(group1= df1_n['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_n['test_score_W\''], group2_name= "test_score_W\'")
+            
+            print("NMI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_n, test_score_W_combine_n,alternative = 'less')
+
+            summary1, results1 = rp.ttest(group1= df3_n['train_score_W0'], group1_name= "train_score_W0",
+                                        group2= df4_n['train_score_W\''], group2_name= "train_score_W\'")
+            
+           # print(summary1)
+            #print(results1)
+
+            #stats.ttest_ind(all_train_score_W0_global_n, all_train_score_W_combine_global_n,alternative = 'less')
+
+
+
+            df1_a = pd.DataFrame(test_score_W0_a, columns = ['test_score_W0'])
+            df2_a = pd.DataFrame(test_score_W_combine_a, columns = ['test_score_W\''])     
+            df3_a = pd.DataFrame(all_train_score_W0_a, columns = ['train_score_W0'])
+            df4_a = pd.DataFrame(all_train_score_W_combine_a, columns = ['train_score_W\''])
+
+            summary, results = rp.ttest(group1= df1_a['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_a['test_score_W\''], group2_name= "test_score_W\'")
+            
+            print("ARI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_a, test_score_W_combine_a,alternative = 'less')
+
+            summary1, results1 = rp.ttest(group1= df3_n['train_score_W0'], group1_name= "train_score_W0",
+                                        group2= df4_n['train_score_W\''], group2_name= "train_score_W\'")
+            
+            #print(summary1)
+            #print(results1)
+
+            #stats.ttest_ind(all_train_score_W0_global_a, all_train_score_W_combine_global_a,alternative = 'less')
+
+        def CompareTwoSOM( self,
+                                        dataread,
+                                        class_num,dim_num,
+                                        best_num,
+                                        best_num_cleaned,
+                                        scope_num,
+                                        unstable_repeat_num,
+                                        type,
+                                        row,
+                                        column
+                                       ):
+            
+            all_train_score_W0_n =[]
+            test_score_W0_n = []
+
+
+            all_train_score_W0_a =[]
+            test_score_W0_a = []
+
+       
+            all_train_score_W0_cleaned_n =[]
+            test_score_W0_cleaned_n = []
+            all_train_score_W0_cleaned_a =[]
+            test_score_W0_cleaned_a = []
+
+            plot_unit = [1]
+            
+            if type == 0:
+                y = class_num
+                while y <= scope_num:
+                    print("neuron unit number: {}".format(y))
+                    if y % 2 == 0:
+                        som = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
+                        som_cleaned = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
+                    else:
+                     som = newSom.SOM(m= y , n= 1, dim=dim_num)  
+                     som_cleaned = newSom.SOM(m= y , n= 1, dim=dim_num) 
+
+                   # optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train_continuous,dataread.data_test_continuous,dataread.label_train_continuous,dataread.label_test_continuous,elbow_num,row,column)        
+                    optimize_W = UTDSM_NORMALSOM.UTDSM_NORMALSOM(som,
+                             som_cleaned,
+                             dataread.data_train,
+                             dataread.cleanedData,
+                             dataread.data_test,
+                             dataread.label_train,
+                             dataread.cleanedLabel,
+                             dataread.label_test,
+                             row,column)                          
+                    optimize_W.run()
+
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+
+
+                    all_train_score_W0_cleaned_n.append(optimize_W.all_train_score_W0_cleaned_n)
+                    test_score_W0_cleaned_n.append(optimize_W.test_score_W0_cleaned_n)
+
+        
+                    y =y+1
+                    if(y<= scope_num):
+                        plot_unit.append(y)
+            
+            
+            if type == 1:
+                y = 1
+                while y <= unstable_repeat_num:
+                    if best_num % 2 == 0:
+                        som = newSom.SOM(m= int(best_num/2), n= int(best_num/2) , dim=dim_num) 
+                        som_cleaned = newSom.SOM(m= int(best_num_cleaned/2), n= int(best_num_cleaned/2) , dim=dim_num) 
+                    else:
+                        som = newSom.SOM(m= best_num , n= 1, dim=dim_num)  
+                        som_cleaned = newSom.SOM(m= best_num_cleaned , n= 1, dim=dim_num)  
+                   
+                    optimize_W = UTDSM_NORMALSOM.UTDSM_NORMALSOM(som,
+                             som_cleaned,
+                             dataread.data_train,
+                             dataread.cleanedData,
+                             dataread.data_test,
+                             dataread.label_train,
+                             dataread.cleanedLabel,
+                             dataread.label_test,
+                             row,column)    
+                    optimize_W.run()
+                  
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+
+
+                    all_train_score_W0_cleaned_n.append(optimize_W.all_train_score_W0_cleaned_n)
+                    test_score_W0_cleaned_n.append(optimize_W.test_score_W0_cleaned_n)
+
+        
+                    y =y+1
+                    if(y<= unstable_repeat_num):
+                        plot_unit.append(y)
+                
+                        
+            figure, axis = plt.subplots(1, 2,figsize =(12, 5))
+            axis[0].set_title("NMI Score")               
+            axis[1].set_title("ARI Score")
+
+           # print("all_train_score_W0_n len {}".format(len(all_train_score_W0_n)))
+           # print("plot_unit {}".format(plot_unit))
+            if type == 0:
+                axis[0].set_xlabel('Neuron number')
+            if type == 1:
+                axis[0].set_xlabel('Repeat number')
+            
+            axis[0].plot(plot_unit,all_train_score_W0_n,'r',label ='all_train_score')
+            axis[0].plot(plot_unit,all_train_score_W0_cleaned_n,'c',label ='all_train_score_cleaned')
+            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score')
+            axis[0].plot(plot_unit,test_score_W0_cleaned_n,'k',label ='test_score_cleaned')
+            axis[0].legend(loc='best')
+
+
+
+            if type == 0:
+                axis[1].set_xlabel('Neuron number')
+            if type == 1:
+                axis[1].set_xlabel('Repeat number')
+            axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score')
+            axis[1].plot(plot_unit,all_train_score_W0_cleaned_a,'c',label ='all_train_score_cleaned')
+            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score')
+            axis[1].plot(plot_unit,test_score_W0_cleaned_a,'k',label ='test_score_cleaned')
+         
+            axis[1].legend(loc='best')
+            plt.show()
+            
+           # print("New Neuron Number : {}".format (int(np.mean(new_neuron_num))))
+                                                    
+                        
+            df1_n = pd.DataFrame(test_score_W0_n, columns = ['test_score_W0'])
+            df2_n = pd.DataFrame(test_score_W0_cleaned_n, columns = ['test_score_cleaned'])
+
+
+
+            summary, results = rp.ttest(group1= df1_n['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_n['test_score_cleaned'], group2_name= "test_score_cleaned")
+            
+            print("NMI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_n, test_score_W0_cleaned_n,alternative = 'less')
+
+
+
+            df1_a = pd.DataFrame(test_score_W0_a, columns = ['test_score_W0'])
+            df2_a = pd.DataFrame(test_score_W0_cleaned_a, columns = ['test_score_cleaned'])     
+
+
+            summary, results = rp.ttest(group1= df1_a['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_a['test_score_cleaned'], group2_name= "test_score_cleaned")
+            
+            print("ARI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_a, test_score_W0_cleaned_a,alternative = 'less')
+
+            
