@@ -708,7 +708,13 @@ class Experiment():
                     all_train_score_W0_cleaned_n.append(optimize_W.all_train_score_W0_cleaned_n)
                     test_score_W0_cleaned_n.append(optimize_W.test_score_W0_cleaned_n)
 
-        
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_a)
+
+
+                    all_train_score_W0_cleaned_a.append(optimize_W.all_train_score_W0_cleaned_a)
+                    test_score_W0_cleaned_a.append(optimize_W.test_score_W0_cleaned_a)
+                  
                     y =y+1
                     if(y<= scope_num):
                         plot_unit.append(y)
@@ -742,7 +748,13 @@ class Experiment():
                     all_train_score_W0_cleaned_n.append(optimize_W.all_train_score_W0_cleaned_n)
                     test_score_W0_cleaned_n.append(optimize_W.test_score_W0_cleaned_n)
 
-        
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_a)
+
+
+                    all_train_score_W0_cleaned_a.append(optimize_W.all_train_score_W0_cleaned_a)
+                    test_score_W0_cleaned_a.append(optimize_W.test_score_W0_cleaned_a)
+                    
                     y =y+1
                     if(y<= unstable_repeat_num):
                         plot_unit.append(y)
@@ -771,6 +783,7 @@ class Experiment():
                 axis[1].set_xlabel('Neuron number')
             if type == 1:
                 axis[1].set_xlabel('Repeat number')
+
             axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score')
             axis[1].plot(plot_unit,all_train_score_W0_cleaned_a,'c',label ='all_train_score_cleaned')
             axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score')

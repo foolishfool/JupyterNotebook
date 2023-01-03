@@ -710,10 +710,14 @@ class UTDSM_NORMALSOM():
         *****************************************************************************************************************************************
         All data trained by som 
         """
+    
         self.som.fit(self.data_train_all)
+       # print("len data_train_all {} ".format(len(self.data_train_all)))
+       # print("len data_train_all_cleaned {} ".format(len(self.data_train_all_cleaned)))
         self.som_cleaned.fit(self.data_train_all_cleaned)
-        weight0 = self.som_cleaned.weights0
-        weight0_cleaned = self.som.weights0
+        self.som_cleaned.fit(self.data_train_all_cleaned)
+        weight0 = self.som.weights0
+        weight0_cleaned = self.som_cleaned.weights0
         self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight0)   
         self.train_W0_predicted_label_cleaned = self.som_cleaned.predict(self.data_train_all_cleaned,weight0_cleaned)   
         predicted_clusters, current_clustered_datas = self.get_indices_in_predicted_clusters(self.som.m*self.som.n, self.train_W0_predicted_label,self.data_train_all)   
@@ -733,7 +737,7 @@ class UTDSM_NORMALSOM():
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_cleaned) ,0)  
         # the value in predicted_clusters are true label value    
         transferred_predicted_label_train_W0_cleaned =  self.convertPredictedLabelValue(self.train_W0_predicted_label_cleaned,self.PLabel_to_Tlabel_Mapping_W0)      
-        self.getScore("all_train_score_W0_cleaned",self.train_label_all_cleaned,transferred_predicted_label_train_W0_cleaned)
+        self.getScore("all_train_score_W0_cleaned",self.label_train_all_cleaned,transferred_predicted_label_train_W0_cleaned)
 
 
         self.test_W0_predicted_label_cleaned = self.som_cleaned.predict(self.data_test_all,weight0_cleaned)   

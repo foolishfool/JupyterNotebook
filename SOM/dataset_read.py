@@ -14,6 +14,10 @@ Created: 1-27-21
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
+from numpy import array
+from numpy import argmax
+from keras.utils import to_categorical
+
 class DATAREAD():
     def __init__(self):
          return
@@ -246,7 +250,7 @@ class DATAREAD():
             else: 
                 allindexes[Label[i]] = []
              
-        print(" Label1 {}".format(len(Label)))  
+       # print(" Label1 {}".format(len(Label)))  
         for item in allindexes.values():         
             if len(item) < 10:
               # print("item {}".format(item))
@@ -295,12 +299,31 @@ class DATAREAD():
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)
          self.data_test = data_test.to_numpy(dtype=np.float64)
+         self.cleanedData = self.cleanedData.to_numpy(dtype=np.float64)
          self.label_train = label_train.to_numpy(dtype=np.float64)
+         self.cleanedLabel =  self.cleanedLabel.to_numpy(dtype=np.float64)
          self.label_test = label_test.to_numpy(dtype=np.float64)
          self.data_train_continuous = data_train_continuous.to_numpy(dtype=np.float64)
          self.data_train_discrete = data_train_discrete.to_numpy(dtype=np.float64)
          self.data_test_continuous = data_test_continuous.to_numpy(dtype=np.float64)
          self.data_test_discrete = data_test_discrete.to_numpy(dtype=np.float64)
+
+
+        # data = array(data)
+        # print(data)
+        # one hot encode
+         encoded = to_categorical(self.data_train_discrete)
+         print(encoded)
+         # invert encoding
+         inverted = argmax(encoded[0])
+         print(inverted)
+
+
+         encoded2 = to_categorical(self.data_test_discrete)
+         print(encoded2)
+         # invert encoding
+         inverted2 = argmax(encoded2[0])
+         print(inverted2)
 
          scaler = StandardScaler().fit(self.data_train)
          self.data_train = scaler.transform(self.data_train)
@@ -310,11 +333,12 @@ class DATAREAD():
          self.data_train_continuous = scaler3.transform(self.data_train_continuous)
          scaler4 = StandardScaler().fit(self.data_test_continuous)
          self.data_test_continuous = scaler4.transform(self.data_test_continuous)
-         scaler5 = StandardScaler().fit(self.data_test_discrete)
-         self.data_test_discrete = scaler5.transform(self.data_test_discrete)
-         scaler6 = StandardScaler().fit(self.data_train_discrete)
-         self.data_train_discrete = scaler6.transform(self.data_train_discrete)
-
+        # scaler5 = StandardScaler().fit(self.data_test_discrete)
+       #  self.data_test_discrete = scaler5.transform(self.data_test_discrete)
+       #   scaler6 = StandardScaler().fit(self.data_train_discrete)
+       #   self.data_train_discrete = scaler6.transform(self.data_train_discrete)
+         scaler7 = StandardScaler().fit(self.cleanedData)
+         self.cleanedData = scaler7.transform(self.cleanedData)
 
         # discrete data do not use scaler
 
