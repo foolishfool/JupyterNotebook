@@ -8,6 +8,7 @@ import newSom
 import TDSM_SOM
 import UTDSM
 import UTDSM_NORMALSOM
+import UTDSM_ONEHOTCODE
 import numpy as np
 from sklearn.metrics import silhouette_score
 import scipy.stats as stats
@@ -754,7 +755,7 @@ class Experiment():
 
                     all_train_score_W0_cleaned_a.append(optimize_W.all_train_score_W0_cleaned_a)
                     test_score_W0_cleaned_a.append(optimize_W.test_score_W0_cleaned_a)
-                    
+                     
                     y =y+1
                     if(y<= unstable_repeat_num):
                         plot_unit.append(y)
@@ -823,5 +824,180 @@ class Experiment():
             print(results)
 
             stats.ttest_ind(test_score_W0_a, test_score_W0_cleaned_a,alternative = 'less')
+
+
+
+        def UTest_PureDiscreteData( self,
+                                        dataread,
+                                        class_num,dim_num,
+                                        original_som_best_num,
+                                        onehot_som_best_num,
+                                        scope_num,
+                                        unstable_repeat_num,
+                                        type,
+                                        row,
+                                        column
+                                       ):
+            
+            all_train_score_W0_n =[]
+            test_score_W0_n = []
+
+
+            all_train_score_W0_a =[]
+            test_score_W0_a = []
+
+       
+            all_train_score_W0_onehot_n =[]
+            test_score_W0_onehot_n = []
+            all_train_score_W0_onehot_a =[]
+            test_score_W0_onehot_a = []
+
+            plot_unit = [1]
+            
+            if type == 0:
+                y = class_num
+                while y <= scope_num:
+                    print("neuron unit number: {}".format(y))
+                    if y % 2 == 0:
+                        som = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
+                        som_onehot = newSom.SOM(m=int(y/2) , n= int(y/2), dim=dim_num)  
+                    else:
+                     som = newSom.SOM(m= y , n= 1, dim=dim_num)  
+                     som_onehot = newSom.SOM(m= y , n= 1, dim=dim_num) 
+
+                   # optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train_continuous,dataread.data_test_continuous,dataread.label_train_continuous,dataread.label_test_continuous,elbow_num,row,column)        
+                    optimize_W = UTDSM_ONEHOTCODE.UTDSM_ONEHOTCODE(som,
+                             som_onehot,
+                             dataread.data_train,
+                             dataread.data_train_discrete,
+                             dataread.data_test,
+                             dataread.data_test_discrete,
+                             dataread.label_train,
+                             dataread.label_test,
+                             row,column)                          
+                    optimize_W.run()
+
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+
+
+                    all_train_score_W0_onehot_n.append(optimize_W.all_train_score_W0_onehot_n)
+                    test_score_W0_onehot_n.append(optimize_W.test_score_W0_onehot_n)
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_a)
+
+
+                    all_train_score_W0_onehot_a.append(optimize_W.all_train_score_W0_onehot_a)
+                    test_score_W0_onehot_a.append(optimize_W.test_score_W0_onehot_a)
+                  
+                    y =y+1
+                    if(y<= scope_num):
+                        plot_unit.append(y)
+            
+            
+            if type == 1:
+                y = 1
+                while y <= unstable_repeat_num:
+                    if original_som_best_num % 2 == 0:
+                        som = newSom.SOM(m= int(original_som_best_num/2), n= int(original_som_best_num/2) , dim=dim_num) 
+                        som_onehot = newSom.SOM(m= int(onehot_som_best_num/2), n= int(onehot_som_best_num/2) , dim=dim_num) 
+                    else:
+                        som = newSom.SOM(m= original_som_best_num , n= 1, dim=dim_num)  
+                        som_onehot = newSom.SOM(m= onehot_som_best_num , n= 1, dim=dim_num)  
+                   
+                    optimize_W = UTDSM_ONEHOTCODE.UTDSM_ONEHOTCODE(som,
+                             som_onehot,
+                             dataread.data_train,
+                             dataread.data_train_discrete,
+                             dataread.data_test,
+                             dataread.data_test_discrete,
+                             dataread.label_train,
+                             dataread.label_test,
+                             row,column)    
+                    optimize_W.run()
+                  
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+
+
+                    all_train_score_W0_onehot_n.append(optimize_W.all_train_score_W0_onehot_n)
+                    test_score_W0_onehot_n.append(optimize_W.test_score_W0_onehot_n)
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_a)
+
+
+                    all_train_score_W0_onehot_a.append(optimize_W.all_train_score_W0_onehot_a)
+                    test_score_W0_onehot_a.append(optimize_W.test_score_W0_onehot_a)
+                     
+                    y =y+1
+                    if(y<= unstable_repeat_num):
+                        plot_unit.append(y)
+                
+                        
+            figure, axis = plt.subplots(1, 2,figsize =(12, 5))
+            axis[0].set_title("NMI Score")               
+            axis[1].set_title("ARI Score")
+
+           # print("all_train_score_W0_n len {}".format(len(all_train_score_W0_n)))
+           # print("plot_unit {}".format(plot_unit))
+            if type == 0:
+                axis[0].set_xlabel('Neuron number')
+            if type == 1:
+                axis[0].set_xlabel('Repeat number')
+            
+            axis[0].plot(plot_unit,all_train_score_W0_n,'r',label ='all_train_score')
+            axis[0].plot(plot_unit,all_train_score_W0_onehot_n,'c',label ='all_train_score_onehot')
+            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score')
+            axis[0].plot(plot_unit,test_score_W0_onehot_n,'k',label ='test_score_onehot')
+            axis[0].legend(loc='best')
+
+
+
+            if type == 0:
+                axis[1].set_xlabel('Neuron number')
+            if type == 1:
+                axis[1].set_xlabel('Repeat number')
+
+            axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score')
+            axis[1].plot(plot_unit,all_train_score_W0_onehot_a,'c',label ='all_train_score_onehot')
+            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score')
+            axis[1].plot(plot_unit,test_score_W0_onehot_a,'k',label ='test_score_onehot')
+         
+            axis[1].legend(loc='best')
+            plt.show()
+            
+           # print("New Neuron Number : {}".format (int(np.mean(new_neuron_num))))
+                                                    
+                        
+            df1_n = pd.DataFrame(test_score_W0_n, columns = ['test_score_W0'])
+            df2_n = pd.DataFrame(test_score_W0_onehot_n, columns = ['test_score_onehot'])
+
+
+
+            summary, results = rp.ttest(group1= df1_n['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_n['test_score_onehot'], group2_name= "test_score_onehot")
+            
+            print("NMI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_n, test_score_W0_onehot_n,alternative = 'less')
+
+
+
+            df1_a = pd.DataFrame(test_score_W0_a, columns = ['test_score_W0'])
+            df2_a = pd.DataFrame(test_score_W0_onehot_a, columns = ['test_score_onehot'])     
+
+
+            summary, results = rp.ttest(group1= df1_a['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_a['test_score_onehot'], group2_name= "test_score_onehot")
+            
+            print("ARI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_a, test_score_W0_onehot_a,alternative = 'less')
 
             

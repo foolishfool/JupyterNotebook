@@ -12,7 +12,7 @@ import math
 import numpy as np
 from mayavi import mlab
 from scipy import spatial
-
+from sklearn import preprocessing
 from scipy.spatial import distance
 class SOM():
     """
@@ -67,15 +67,42 @@ class SOM():
         #print("initila self.weigts {}".format(self.weights))
         self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
+        self.weights_onehot = rng.normal(size=(m * n, dim))
+        print("self.weights_onehot{}".format( self.weights_onehot))
+        encoder = preprocessing.OneHotEncoder(max_categories= 6)
+        
+        totalweight =[]
+       
+        for i in range(0, self.weights_onehot.shape[0]):              
+            emptyrow = []
+            #print("self.weights_onehot[i:]{} i {}".format(self.weights_onehot[i,:],i))
+            for item in self.weights_onehot[i,:]:                   
+                emptyelement =np.append([],item)  
+                emptyrow.append(emptyelement)
+            emptyrow = np.array(emptyrow)
+            #emptyrow = emptyrow.toarray()
+            #print("emptyrow {}".format(emptyrow))
+            emptyrow = encoder.fit_transform(emptyrow)       
+            emptyrow = emptyrow.toarray()
+            #print("emptyrow 2 {}".format(emptyrow))
+            totalweight.append(emptyrow)
+        #print("totalweight {}".format(totalweight))
+        #input = [[0.], [0.76666665], [0.5], [0.23333333], [1.]]
+        #self.weights_onehot = encoder.fit_transform(totalweight)
+        #print("self.weights_onehot {}".format(self.weights_onehot))
+       # print("1111111111111")
+        self.weights_onehot = totalweight
+        print(" self.weights_onehot 2 {}".format( self.weights_onehot ))
+
         self._locations = self._get_locations(m, n)
-         
-        #print(self.weights)
+        
+       # print(self._locations)
         # Set after fitting
         self._inertia = None
         self._n_iter_ = None
         self._trained = False
-        #  self.neuron_represent_datas = [[W0_represent],[W1_represent],[W2_represent]]  W0_represent = [[n0 represent data],[n1 represent data],[n2 represent data]]
-        self.neuron_represent_datas = []
+
+
 
     def _get_locations(self, m, n):
         """
@@ -115,7 +142,22 @@ class SOM():
 
 
 
-
+    def _find_bmu_hamming_onehot(self,x, newWeights):
+        hamming_distances =[]
+       # print("x {} newweights {}".format(x, newWeights))
+        for i in range(0,len(newWeights)):
+            hdistance = 0
+           # print("x {} newWeights[i] {}".format(x, newWeights[i]))
+            for item in newWeights[i]:
+             #   print("weighgt{}".format(item))
+             #   print("distance.hamming(x, item){}".format( distance.hamming(x, item)))
+                hdistance = hdistance + distance.hamming(x, item)
+            hamming_distances.append(hdistance)
+          #  print("hdistance {}".format( hdistance))
+        #print("  {}".format(hamming_distances))
+        mindex = min(hamming_distances)
+        print("mindex {}".format( hamming_distances.index(mindex)))
+        return hamming_distances.index(mindex)
     
 
     def step(self,x):
@@ -139,11 +181,11 @@ class SOM():
         # Find square distance from each weight to the BMU
         #print("[bmu_location]*(m*n){}".format([bmu_location]*(m*n)));
         stacked_bmu = np.stack([bmu_location]*(self.m*self.n), axis=0)
-        #print("stacked_bmu: {}".format(stacked_bmu))
+        print("stacked_bmu: {}".format(stacked_bmu))
         #the distance among unit is calcuated by the distance among unit's indices
         #bmu_distance is an array with distance to each unit
         bmu_distance = np.sum(np.power(self._locations.astype(np.float64) - stacked_bmu.astype(np.float64), 2), axis=1)
-       # print("bmu_distance:{}".format(bmu_distance))
+        print("bmu_distance:{}".format(bmu_distance))
         # Compute update neighborhood
         neighborhood = np.exp((bmu_distance / (self.sigma ** 2)) * -1)
        # print("neighborhood:{}".format(neighborhood))
@@ -199,7 +241,48 @@ class SOM():
        # print("weights:{}".format(self.weights))
         # Update weights
         self.weights += delta
-    
+
+    def step_hamming_onehot(self,x):
+        """
+        Do one step of training on the given input vector.
+        """
+
+        for item in x:
+            print("item {}".format(item))
+        # Stack x to have one row per weight 
+            x_stack = np.stack([x]*(self.m*self.n), axis=0)
+        # x_stack , with mxn row , each row has the same array: x
+        # Get index of best matching unit
+            bmu_index = self._find_bmu_hamming_onehot(item,self.weights_onehot)
+        #print("bmu_index{}".format(bmu_index));
+        # Find location of best matching unit, _locations is all the indices for a given matrix for array
+        # bmu_location is the bmu_indexth element in _locations, such as if bmu_index = 4 in [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]] it return [2,0]
+        bmu_location = self._locations[bmu_index,:]
+        #print("bmu_location{}".format(bmu_location));
+        # Find square distance from each weight to the BMU
+        #print("[bmu_location]*(m*n){}".format([bmu_location]*(m*n)));
+        stacked_bmu = np.stack([bmu_location]*(self.m*self.n), axis=0)
+        #print("stacked_bmu: {}".format(stacked_bmu))
+        #the distance among unit is calcuated by the distance among unit's indices
+        #bmu_distance is an array with distance to each unit
+        bmu_distance = np.sum(np.power(self._locations.astype(np.float64) - stacked_bmu.astype(np.float64), 2), axis=1)
+       # print("bmu_distance:{}".format(bmu_distance))
+        # Compute update neighborhood
+        neighborhood = np.exp((bmu_distance / (self.sigma ** 2)) * -1)
+       # print("neighborhood:{}".format(neighborhood))
+        #local_step is an array with stepchanges to each unit
+        local_step = self.lr * neighborhood
+        #print("local_step:{}".format(local_step))
+        # Stack local step to be proper shape for update
+        local_multiplier = np.stack([local_step]*(self.dim), axis=1)
+        print("x_stack:{}".format(x_stack.shape))
+        print("self.weights_onehot:{}".format(self.weights_onehot.shape))
+        # Multiply by difference between input and weights
+        delta = local_multiplier * (x_stack - self.weights_onehot).astype(float)
+        #print("delta:{}".format(delta))
+       # print("weights:{}".format(self.weights))
+        # Update weights
+        self.weights += delta  
     def _compute_point_intertia(self, x):
         """
         Compute the inertia of a single point. Inertia defined as squared distance
@@ -312,6 +395,7 @@ class SOM():
         None
             Fits the SOM to the given data but does not return anything.
         """
+        print("X {}".format())
 
         global_iter_counter = 0
     # the number of samples   
@@ -369,7 +453,70 @@ class SOM():
             self.weights1 = copy.deepcopy(self.weights)
 
         return
-  
+    
+
+    def fit_hamming_onehot( self, X, weightIndex = 0,epochs=1, shuffle=True):
+        global_iter_counter = 0
+    # the number of samples   
+        n_samples = X.shape[0] 
+        #print("n_samples {}".format(n_samples))
+        total_iterations = np.minimum(epochs * n_samples, self.max_iter)
+        for epoch in range(epochs):
+            # Break if past max number of iterations
+            if global_iter_counter > self.max_iter:
+                break
+
+            if shuffle:
+                rng = np.random.default_rng(self.random_state)
+                indices = rng.permutation(n_samples)
+                #print("indices1 {}".format(indices))
+                # permute the index of samples
+                indices = np.array(indices)
+                #print("indices2 {}".format(indices))
+            else:
+                indices = np.arange(n_samples)                       
+            
+
+         # Train
+            for idx in indices:
+
+             # Break if past max number of iterations
+                if global_iter_counter > self.max_iter:
+                    break
+                #print("idx =  {}  ".format( idx))
+                #print(X[idx] )
+                
+                input = X[idx]
+               # print("idx {} input : {}" .format(idx, input))
+                #if (type(input) is np.float64):
+                #    input = [input]
+                # Do one step of training
+                # input = [[onehotcode],[onehotcode],[onehotcode]]
+                self.step_hamming_onehot(input)
+                # Update learning rate
+                global_iter_counter += 1
+                self.lr = (1 - (global_iter_counter / total_iterations)) * self.initial_lr
+    
+        # Compute inertia
+          
+        inertia = np.sum(np.array([float(self._compute_point_intertia(x)) for x in X]))
+        #print("inertia {}".format(inertia))
+        self._inertia_ = inertia
+    
+    # Set n_iter_ attribute
+        self._n_iter_ = global_iter_counter
+
+    # Set trained flag
+        self.trained = True
+        if(weightIndex == 0):
+            self.weights0 = copy.deepcopy(self.weights)
+
+        if(weightIndex == 1):
+            self.weights1 = copy.deepcopy(self.weights)
+
+        return
+    
+
     def predict(self,X, newWeights):
         """
         Predict cluster for each element in X.

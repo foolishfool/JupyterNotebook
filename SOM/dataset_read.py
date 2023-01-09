@@ -285,12 +285,12 @@ class DATAREAD():
          for (column_name, column) in data_train.transpose().iterrows():
             if len(X[column_name].unique())>10: 
                 self.data_continuous_indexes.append(column_name)
-              #  print("continuous label : {}".format(column_name))
+                print("continuous label : {}".format(column_name))
             else: 
                 self.data_discrete_indexes.append(column_name)
-              #  print("discrete label : {}".format(column_name))
+               # print(" self.data_discrete_indexes: {}".format( self.data_discrete_indexes))
     
-
+         print(" self.data_discrete_indexes: {}".format( self.data_discrete_indexes))
          data_train_continuous = data_train[self.data_continuous_indexes]
          data_train_discrete = data_train[self.data_discrete_indexes]  
          data_test_continuous = data_test[self.data_continuous_indexes]
@@ -312,27 +312,30 @@ class DATAREAD():
         # data = array(data)
         # print(data)
         # one hot encode
-         encoded = to_categorical(self.data_train_discrete)
-         print(encoded)
+         print(self.data_train_discrete[2])
+         self.data_train_discrete = to_categorical(self.data_train_discrete)
+         #print(self.data_train_discrete[2])
          # invert encoding
-         inverted = argmax(encoded[0])
-         print(inverted)
+         inverted = argmax(self.data_train_discrete[0])
+         #print(inverted)
 
 
-         encoded2 = to_categorical(self.data_test_discrete)
-         print(encoded2)
+         self.data_test_discrete = to_categorical(self.data_test_discrete)
+        # print(encoded2)
          # invert encoding
-         inverted2 = argmax(encoded2[0])
-         print(inverted2)
+         #inverted2 = argmax(encoded2[0])
+        # print(inverted2)
 
          scaler = StandardScaler().fit(self.data_train)
          self.data_train = scaler.transform(self.data_train)
          scaler2 = StandardScaler().fit(self.data_test)
-         self.data_test = scaler2.transform(self.data_test)
-         scaler3 = StandardScaler().fit(self.data_train_continuous)
-         self.data_train_continuous = scaler3.transform(self.data_train_continuous)
-         scaler4 = StandardScaler().fit(self.data_test_continuous)
-         self.data_test_continuous = scaler4.transform(self.data_test_continuous)
+
+         if self.data_train_continuous != [] :
+            scaler3 = StandardScaler().fit(self.data_train_continuous)
+            self.data_train_continuous = scaler3.transform(self.data_train_continuous)
+         if self.data_test_continuous != [] :
+            scaler4 = StandardScaler().fit(self.data_test_continuous)
+            self.data_test_continuous = scaler4.transform(self.data_test_continuous)
         # scaler5 = StandardScaler().fit(self.data_test_discrete)
        #  self.data_test_discrete = scaler5.transform(self.data_test_discrete)
        #   scaler6 = StandardScaler().fit(self.data_train_discrete)
