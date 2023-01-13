@@ -7,7 +7,7 @@ from typing import List
 import newSom
 import TDSM_SOM
 import UTDSM
-import UTDSM_NORMALSOM
+import UTDSM_EFOSOM
 import UTDSM_ONEHOTCODE
 import numpy as np
 from sklearn.metrics import silhouette_score
@@ -67,7 +67,20 @@ class Experiment():
 
             plt.plot(unit_list, self.smooth(inertias_average, smoothWeight))
             plt.plot(unit_list, inertias_average)
+        
+        def topology_som(self, som_num):
+            start = int(np.sqrt(som_num))
+            factor = som_num / start
+            while not self.is_integer(factor):
+                start += 1
+                factor = som_num / start
+            return int(factor), start
 
+        def is_integer(self,number):
+            if int(number) == number:
+                return True
+            else:
+                return False
 
         def Ttest(self,dataread, class_num,dim_num,scope_num,unstable_repeat_num):
         
@@ -1001,3 +1014,193 @@ class Experiment():
             stats.ttest_ind(test_score_W0_a, test_score_W0_onehot_a,alternative = 'less')
 
             
+
+        def UTest_FESOM( self,
+                                        dataread,
+                                        class_num,
+                                        dim_num,
+                                        original_som_best_num,
+                                        scope_num,
+                                        unstable_repeat_num,
+                                        type,
+                                        row,
+                                        column
+                                       ):
+            
+            all_train_score_W0_n =[]
+            test_score_W0_n = []
+
+
+            all_train_score_W0_a =[]
+            test_score_W0_a = []
+
+    
+            all_train_score_W0_transferred_n =[]
+            all_test_score_W0_transferred_n = []
+            all_train_score_W0_transferred_a =[]
+            all_test_score_W0_transferred_a = []
+
+            plot_unit = [1]
+            
+
+            soms = []
+            for i in range(0, dataread.data_train_discrete_before_transfer.shape[1]):
+
+               # print("dataread.data_test_discrete[:,i] {} {}".format(i, dataread.data_train_discrete_before_transfer[:,i]))
+                sum_num = len(np.unique(dataread.data_train_discrete_before_transfer[:,i]))  
+               # print("sum_num {} i{} ".format(sum_num,i));   
+              #  print("np.unique(dataread.data_test_discrete[:,i] {}".format(np.unique(dataread.data_train_discrete_before_transfer[:,i])) )
+                m, n = self.topology_som(sum_num)
+                som_feature = newSom.SOM(m, n, dim=sum_num) 
+                #if 0 in np.unique(dataread.data_train_discrete_before_transfer[:,i]):
+                #    som_feature = newSom.SOM(m, n, dim=sum_num)  
+                #else: som_feature = newSom.SOM(m , n, dim=sum_num+1)  
+
+                soms.append(som_feature)
+            
+            if type == 0:
+                y = class_num
+                while y <= scope_num:
+                    m, n = self.topology_som(y)
+                    print("neuron unit number: {}".format(y))
+
+                    som = newSom.SOM(m, n, dim=dim_num)  
+                    som_transferred = newSom.SOM(m, n, dim=dim_num)  
+
+                   # optimize_W = UTDSM.UTDSM_SOM(som,dataread.data_train_continuous,dataread.data_test_continuous,dataread.label_train_continuous,dataread.label_test_continuous,elbow_num,row,column)        
+                    optimize_W = UTDSM_EFOSOM.UTDSM_EFOSOM(som,
+                             soms,
+                             som_transferred,
+                             dataread.data_train,
+                             dataread.data_train_discrete_after_transfer,
+                             dataread.data_test,
+                             dataread.data_test_discrete_after_transfer,
+                             dataread.label_train,
+                             dataread.label_test,
+                             row,column)                          
+                    optimize_W.run()
+
+                    
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+
+
+                    all_train_score_W0_transferred_n.append(optimize_W.all_train_score_W0_transferred_n)
+                    all_test_score_W0_transferred_n.append(optimize_W.test_score_W0_transferred_n)
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_a)
+
+
+                    all_train_score_W0_transferred_a.append(optimize_W.all_train_score_W0_transferred_a)
+                    all_test_score_W0_transferred_a.append(optimize_W.test_score_W0_transferred_a)
+                  
+                    y =y+5
+                    if(y<= scope_num):
+                        plot_unit.append(y)
+            
+            
+            if type == 1:
+                y = 1
+                while y <= unstable_repeat_num:
+                    m, n = self.topology_som(original_som_best_num)
+
+                    som = newSom.SOM(m, n, dim=dim_num)  
+                    som_transferred = newSom.SOM(m, n, dim=dim_num)  
+
+                    optimize_W = UTDSM_EFOSOM.UTDSM_EFOSOM(som,
+                             soms,
+                             som_transferred,
+                             dataread.data_train,
+                             dataread.data_train_discrete_after_transfer,
+                             dataread.data_test,
+                             dataread.data_test_discrete_after_transfer,
+                             dataread.label_train,
+                             dataread.label_test,
+                             row,column)    
+                    optimize_W.run()
+                  
+                    all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
+                    test_score_W0_n.append(optimize_W.test_score_W0_n)
+
+
+                    all_train_score_W0_transferred_n.append(optimize_W.all_train_score_W0_transferred_n)
+                    all_test_score_W0_transferred_n.append(optimize_W.test_score_W0_transferred_n)
+
+                    all_train_score_W0_a.append(optimize_W.all_train_score_W0_a)
+                    test_score_W0_a.append(optimize_W.test_score_W0_a)
+
+
+                    all_train_score_W0_transferred_a.append(optimize_W.all_train_score_W0_transferred_a)
+                    all_test_score_W0_transferred_a.append(optimize_W.test_score_W0_transferred_a)
+                     
+                    y =y+1
+                    if(y<= unstable_repeat_num):
+                        plot_unit.append(y)
+                
+                        
+            figure, axis = plt.subplots(1, 2,figsize =(12, 5))
+            axis[0].set_title("NMI Score")               
+            axis[1].set_title("ARI Score")
+
+           # print("all_train_score_W0_n len {}".format(len(all_train_score_W0_n)))
+           # print("plot_unit {}".format(plot_unit))
+            if type == 0:
+                axis[0].set_xlabel('Neuron number')
+            if type == 1:
+                axis[0].set_xlabel('Repeat number')
+            
+            axis[0].plot(plot_unit,all_train_score_W0_n,'r',label ='all_train_score')
+            axis[0].plot(plot_unit,all_train_score_W0_transferred_n,'c',label ='all_train_score_transferred')
+            axis[0].plot(plot_unit,test_score_W0_n,'y',label ='test_score')
+            axis[0].plot(plot_unit,all_test_score_W0_transferred_n,'k',label ='test_score_transferred')
+            axis[0].legend(loc='best')
+
+
+
+            if type == 0:
+                axis[1].set_xlabel('Neuron number')
+            if type == 1:
+                axis[1].set_xlabel('Repeat number')
+
+            axis[1].plot(plot_unit,all_train_score_W0_a,'r',label ='all_train_score')
+            axis[1].plot(plot_unit,all_train_score_W0_transferred_a,'c',label ='all_train_score_transferred')
+            axis[1].plot(plot_unit,test_score_W0_a,'y',label ='test_score')
+            axis[1].plot(plot_unit,all_test_score_W0_transferred_a,'k',label ='test_score_transferred')
+         
+            axis[1].legend(loc='best')
+            plt.show()
+            
+           # print("New Neuron Number : {}".format (int(np.mean(new_neuron_num))))
+                                                    
+                        
+            df1_n = pd.DataFrame(test_score_W0_n, columns = ['test_score_W0'])
+            df2_n = pd.DataFrame(all_test_score_W0_transferred_n, columns = ['test_score_transferred'])
+
+
+
+            summary, results = rp.ttest(group1= df1_n['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_n['test_score_transferred'], group2_name= "test_score_transferred")
+            
+            print("NMI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_n, all_test_score_W0_transferred_n,alternative = 'less')
+
+
+
+            df1_a = pd.DataFrame(test_score_W0_a, columns = ['test_score_W0'])
+            df2_a = pd.DataFrame(all_test_score_W0_transferred_a, columns = ['test_score_transferred'])     
+
+
+            summary, results = rp.ttest(group1= df1_a['test_score_W0'], group1_name= "test_score_W0",
+                                        group2= df2_a['test_score_transferred'], group2_name= "test_score_transferred")
+            
+            print("ARI T-Test")
+            print(summary)
+            print(results)
+
+            stats.ttest_ind(test_score_W0_a, all_test_score_W0_transferred_a,alternative = 'less')
+
+

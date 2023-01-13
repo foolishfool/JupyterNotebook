@@ -125,9 +125,10 @@ class DATAREAD():
         X[name] = X[name].astype(str).str.strip()
         #print(X[name])
         for i in range(0, X.shape[0]):
-            if  X.at[i,name]== ''  or  X.at[i,name]== 'nan'or  (X.at[i,name]== -1 and name != 'Var_1') :
+           
+            if  (X.at[i,name]== ''   or  X.at[i,name]== 'nan') and name !="Var_1":
                 X.at[i,name]= -1   
-            if  X.at[i,name]== 'Male' or  X.at[i,name]== 'Yes' or  X.at[i,name]== 'Artist' or  X.at[i,name]== 'Average'or  X.at[i,name]== 'A'or  (X.at[i,name]== -1 and name == 'Var_1'):
+            elif X.at[i,name]== 'Male' or  X.at[i,name]== 'Yes' or  X.at[i,name]== 'Artist' or  X.at[i,name]== 'Average'or  X.at[i,name]== 'A':
                 X.at[i,name]= 0            
             elif  X.at[i,name]== 'Female'or  X.at[i,name]== 'No' or  X.at[i,name]== 'Doctor'or  X.at[i,name]== 'Low'or  X.at[i,name]== 'B':
                 X.at[i,name]=1
@@ -145,6 +146,8 @@ class DATAREAD():
                 X.at[i,name]=7  
             elif  X.at[i,name]== 'Marketing'or  X.at[i,name]== 'Cat_7':
                 X.at[i,name]=8  
+            elif (X.at[i,name]== ''   or  X.at[i,name]== 'nan') and name =="Var_1":
+                X.at[i,name]= 1  
             else: 
                 print("Unkonwn value {} at {}".format(X.at[i,name], name))
 
@@ -283,48 +286,110 @@ class DATAREAD():
          self.data_discrete_indexes = []
     
          for (column_name, column) in data_train.transpose().iterrows():
-            if len(X[column_name].unique())>10: 
+            if len(X[column_name].unique())>20: 
                 self.data_continuous_indexes.append(column_name)
-                print("continuous label : {}".format(column_name))
+              #  print("continuous label : {}".format(column_name))
             else: 
                 self.data_discrete_indexes.append(column_name)
+                print("discrete label : {}".format(column_name))
                # print(" self.data_discrete_indexes: {}".format( self.data_discrete_indexes))
     
-         print(" self.data_discrete_indexes: {}".format( self.data_discrete_indexes))
+        # print(" self.data_discrete_indexes: {}".format( self.data_discrete_indexes))
          data_train_continuous = data_train[self.data_continuous_indexes]
          data_train_discrete = data_train[self.data_discrete_indexes]  
          data_test_continuous = data_test[self.data_continuous_indexes]
          data_test_discrete = data_test[self.data_discrete_indexes]  
-
+         #print("self.data_train 1 {}".format(data_train))
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)
+
+        # print("self.data_train 2{}".format(self.data_train))
          self.data_test = data_test.to_numpy(dtype=np.float64)
          self.cleanedData = self.cleanedData.to_numpy(dtype=np.float64)
          self.label_train = label_train.to_numpy(dtype=np.float64)
          self.cleanedLabel =  self.cleanedLabel.to_numpy(dtype=np.float64)
          self.label_test = label_test.to_numpy(dtype=np.float64)
          self.data_train_continuous = data_train_continuous.to_numpy(dtype=np.float64)
+       
          self.data_train_discrete = data_train_discrete.to_numpy(dtype=np.float64)
+
+         self.data_train_discrete_before_transfer = data_train_discrete.to_numpy(dtype=np.float64)
          self.data_test_continuous = data_test_continuous.to_numpy(dtype=np.float64)
          self.data_test_discrete = data_test_discrete.to_numpy(dtype=np.float64)
-
-
-        # data = array(data)
-        # print(data)
+         self.data_test_discrete_before_transer = data_test_discrete.to_numpy(dtype=np.float64)
+        
+        #print(1111111111111)
+         #for i in range(0, X.shape[0]):
+        #    print(self.data_train_discrete[i,1])
+         #print("self.data_train_discrete 1 {}".format(self.data_train_discrete.shape))
         # one hot encode
-         print(self.data_train_discrete[2])
-         self.data_train_discrete = to_categorical(self.data_train_discrete)
-         #print(self.data_train_discrete[2])
-         # invert encoding
-         inverted = argmax(self.data_train_discrete[0])
-         #print(inverted)
+        # print(self.data_train_discrete[2])
+         empty_list =[]
+         uniqueNumbers =[]
+      #   for i in range(0, X.shape[0]):
+       #     print(self.data_train_discrete[i,1])
+        # print(11111111111111)
+         #print( data_train_discrete.shape[1])
+         for i in range(0, data_train_discrete.shape[1]):
+            #print("self.data_train_discrete[:,i] {} i {} ".format(self.data_train_discrete[:,i] , i))
+            #item  = to_categorical(self.data_train_discrete[:,i])
+            uniquelist = np.unique(self.data_train_discrete[:,i])
+           # print("uniquelist 1  {}, i {}".format(uniquelist, i))
+            uniqueNumber = len(uniquelist)
+            uniqueNumbers.append(uniqueNumber)
+            if uniquelist[0] == -1:
+                uniquelist = np.delete(uniquelist,0)
+               # print("uniquelist 2 {}".format(uniquelist))
+        
+            maxValue = np.amax(self.data_train_discrete[:,i])
+            minValue = np.amin(uniquelist)
+            #print("maxValue {} minValue {} ".format(maxValue , minValue))
+            for idx, j in np.ndenumerate(self.data_train_discrete[:,i]):
+                if self.data_train_discrete[:,i][idx] == -1:
+                    #print("-1 idx{}".format(idx))
+                    # to_categorical([1,2,3]) = [0,1,0,0] dim 4 start from 0
+                    if minValue == 0:
+                        self.data_train_discrete[:,i][idx]  = maxValue +1
+                    else : 
+                        self.data_train_discrete[:,i][idx]  = 0
+            # one hot encode
+            encoded = to_categorical(self.data_train_discrete[:,i])
+            empty_list.append(encoded)
+         self.data_train_discrete_after_transfer = empty_list
+       #  print("self.data_train_discrete {}".format(self.data_train_discrete_after_transfer))
+        
+         empty_list2 =[]
 
+         for i in range(0, data_test_discrete.shape[1]):
+            hasmissingvalue = False
+            uniquelist = np.unique(self.data_test_discrete[:,i])
+           # print("uniquelist 2 {} i {}".format(uniquelist,i))
+            if uniqueNumbers[i] > len(uniquelist):
+                hasmissingvalue = True
+            if uniquelist[0] == -1:
+                uniquelist = np.delete(uniquelist,0)
+            maxValue = np.amax(self.data_test_discrete[:,i])
+            minValue = np.amin(uniquelist)
+            #print("maxValue {} minValue {} ".format(maxValue , minValue))
+            for idx, j in np.ndenumerate(self.data_test_discrete[:,i]):
+                if self.data_test_discrete[:,i][idx] == -1:
+                    #print("-1 idx{}".format(idx))
+                    # to_categorical([1,2,3]) = [0,1,0,0] dim 4 start from 0
+                    if minValue == 0:
+                        self.data_test_discrete[:,i][idx]  = maxValue +1
+                    else : 
+                        self.data_test_discrete[:,i][idx]  = 0
+            # one hot encode
+            if hasmissingvalue:
+               # print("self.data_test_discrete[:,i] 1 {}".format(self.data_test_discrete[:,i]))
+                zero_column = np.zeros((self.data_test_discrete[:,i].shape[0],1))
+                self.data_test_discrete[:,i] = np.append(self.data_test_discrete[:,i],zero_column)
+               # print("self.data_test_discrete[:,i] 2 {}".format(self.data_test_discrete[:,i]))
 
-         self.data_test_discrete = to_categorical(self.data_test_discrete)
-        # print(encoded2)
-         # invert encoding
-         #inverted2 = argmax(encoded2[0])
-        # print(inverted2)
+            encoded2 = to_categorical(self.data_test_discrete[:,i])
+            empty_list2.append(encoded2)
+         self.data_test_discrete_after_transfer = empty_list2
+
 
          scaler = StandardScaler().fit(self.data_train)
          self.data_train = scaler.transform(self.data_train)
@@ -346,48 +411,4 @@ class DATAREAD():
         # discrete data do not use scaler
 
 
-    def initializedataset_frog(self,X,Y):
-         self.X = X.sample(n =X.shape[0])
-         self.data_test =  Y
-         data_train = self.X 
-         data_test =  self.data_test
-         label_train = data_train["Species"]
-         label_test = data_test["Species"]
-         data_train = data_train.drop("Species",axis = 1)
-         data_test = data_test.drop("Species",axis = 1)
 
-        # transfer to numpy array
-         self.data_train = data_train.to_numpy(dtype=np.float64)
-         self.data_test = data_test.to_numpy(dtype=np.float64)
-         self.label_train = label_train.to_numpy(dtype=np.float64)
-         self.label_test = label_test.to_numpy(dtype=np.float64)
-    
-    def initializedataset_iris(self,X,Y):
-         self.X = X.sample(n =X.shape[0])
-         self.data_test =  Y
-         data_train = self.X 
-         data_test =  self.data_test
-         label_train = data_train["Species"]
-         label_test = data_test["Species"]
-         data_train = data_train.drop("Species",axis = 1)
-         data_test = data_test.drop("Species",axis = 1)
-
-        # transfer to numpy array
-         self.data_train = data_train.to_numpy(dtype=np.float64)
-         self.data_test = data_test.to_numpy(dtype=np.float64)
-         self.label_train = label_train.to_numpy(dtype=np.float64)
-         self.label_test = label_test.to_numpy(dtype=np.float64)
-
-    def initializedataset_CM(self,X,Y):
-        self.X = X.sample(n =X.shape[0])
-        self.data_test =  Y
-        data_train = self.X 
-        # transfer to numpy array
-        data_train = data_train.to_numpy(dtype=np.float64)
-        data_test = self.data_test.to_numpy(dtype=np.float64)
-        self.label_train = data_train[:,0]
-        self.label_test = data_test[:,0]
-
-        # delete first column
-        self.data_train= data_train[:,1:]
-        self.data_test =data_test[:,1:]

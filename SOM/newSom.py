@@ -64,11 +64,11 @@ class SOM():
         rng = np.random.default_rng(random_state)
 
         self.weights= rng.normal(size=(m * n, dim))
-        #print("initila self.weigts {}".format(self.weights))
+        #print("initila self.weigts {} dim {}".format(m*n,dim))
         self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
         self.weights_onehot = rng.normal(size=(m * n, dim))
-        print("self.weights_onehot{}".format( self.weights_onehot))
+        #print("self.weights_onehot{}".format( self.weights_onehot))
         encoder = preprocessing.OneHotEncoder(max_categories= 6)
         
         totalweight =[]
@@ -92,7 +92,7 @@ class SOM():
         #print("self.weights_onehot {}".format(self.weights_onehot))
        # print("1111111111111")
         self.weights_onehot = totalweight
-        print(" self.weights_onehot 2 {}".format( self.weights_onehot ))
+        #print(" self.weights_onehot 2 {}".format( self.weights_onehot ))
 
         self._locations = self._get_locations(m, n)
         
@@ -115,16 +115,20 @@ class SOM():
         #print("_get_locations( m, n){}".format(np.argwhere(np.ones(shape=(m, n))).astype(np.int64)))
         return np.argwhere(np.ones(shape=(m, n))).astype(np.int64)
 
-    def _find_bmu(self,x, newWeights):
+    def _find_bmu(self,x, newWeights,showlog = False):
         """
         Find the index of the best matching unit for the input vector x.
-        """  
-       # print("x:{}".format(x)) 
+        """
+        #if showlog:  
+        #    print("x len{} newWeights.shape[0]  {}".format(len(x), newWeights.shape[0])) 
         # Stack x to have one row per weight *********** get the all the element for one row
         # when split_nubmer = 0 corresponds to weight0, split_nubmer n represent Wn
         x_stack = np.stack([x]*(newWeights.shape[0]), axis=0)
         # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
-        
+        #if showlog:
+            #print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
+       # if x_stack.shape != newWeights.shape:
+       #     print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
         distance = np.linalg.norm((x_stack - newWeights).astype(float), axis=1)
         # Find index of best matching unit
         return np.argmin(distance)
@@ -160,7 +164,7 @@ class SOM():
         return hamming_distances.index(mindex)
     
 
-    def step(self,x):
+    def step(self,x, showlog):
         """
         Do one step of training on the given input vector.
         """
@@ -172,7 +176,11 @@ class SOM():
         #print("x_stack{}".format(x_stack));
         # x_stack , with mxn row , each row has the same array: x
         # Get index of best matching unit
-        bmu_index = self._find_bmu(x,self.weights)
+       # print(showlog)
+        #if showlog == True:
+        #    print("x {} {}".format(x, self.weights.shape) )
+        bmu_index = self._find_bmu(x,self.weights,showlog)
+        
         #print("bmu_index{}".format(bmu_index));
         # Find location of best matching unit, _locations is all the indices for a given matrix for array
         # bmu_location is the bmu_indexth element in _locations, such as if bmu_index = 4 in [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]] it return [2,0]
@@ -181,11 +189,11 @@ class SOM():
         # Find square distance from each weight to the BMU
         #print("[bmu_location]*(m*n){}".format([bmu_location]*(m*n)));
         stacked_bmu = np.stack([bmu_location]*(self.m*self.n), axis=0)
-        print("stacked_bmu: {}".format(stacked_bmu))
+        #print("stacked_bmu: {}".format(stacked_bmu))
         #the distance among unit is calcuated by the distance among unit's indices
         #bmu_distance is an array with distance to each unit
         bmu_distance = np.sum(np.power(self._locations.astype(np.float64) - stacked_bmu.astype(np.float64), 2), axis=1)
-        print("bmu_distance:{}".format(bmu_distance))
+       # print("bmu_distance:{}".format(bmu_distance))
         # Compute update neighborhood
         neighborhood = np.exp((bmu_distance / (self.sigma ** 2)) * -1)
        # print("neighborhood:{}".format(neighborhood))
@@ -248,7 +256,7 @@ class SOM():
         """
 
         for item in x:
-            print("item {}".format(item))
+           # print("item {}".format(item))
         # Stack x to have one row per weight 
             x_stack = np.stack([x]*(self.m*self.n), axis=0)
         # x_stack , with mxn row , each row has the same array: x
@@ -275,8 +283,8 @@ class SOM():
         #print("local_step:{}".format(local_step))
         # Stack local step to be proper shape for update
         local_multiplier = np.stack([local_step]*(self.dim), axis=1)
-        print("x_stack:{}".format(x_stack.shape))
-        print("self.weights_onehot:{}".format(self.weights_onehot.shape))
+       ## print("x_stack:{}".format(x_stack.shape))
+        #print("self.weights_onehot:{}".format(self.weights_onehot.shape))
         # Multiply by difference between input and weights
         delta = local_multiplier * (x_stack - self.weights_onehot).astype(float)
         #print("delta:{}".format(delta))
@@ -297,7 +305,7 @@ class SOM():
         return np.sum(np.square(x - bmu))
 
 
-    def fit( self, X, weightIndex = 0,epochs=1, shuffle=True):
+    def fit( self, X, weightIndex = 0,epochs=1, shuffle=True, showlog = False):
         """
         Take data (a tensor of type float64) as input and fit the SOM to that
         data for the specified number of epochs.
@@ -352,7 +360,7 @@ class SOM():
                 #if (type(input) is np.float64):
                 #    input = [input]
                 # Do one step of training
-                self.step(input)
+                self.step(input,showlog)
                 # Update learning rate
                 global_iter_counter += 1
                 self.lr = (1 - (global_iter_counter / total_iterations)) * self.initial_lr
@@ -395,7 +403,7 @@ class SOM():
         None
             Fits the SOM to the given data but does not return anything.
         """
-        print("X {}".format())
+        #print("X {}".format())
 
         global_iter_counter = 0
     # the number of samples   
