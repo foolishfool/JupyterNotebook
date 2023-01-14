@@ -1044,17 +1044,17 @@ class Experiment():
             
 
             soms = []
-            for i in range(0, dataread.data_train_discrete_before_transfer.shape[1]):
+            for i in range(0, dataread.all_data.shape[1]):
 
                # print("dataread.data_test_discrete[:,i] {} {}".format(i, dataread.data_train_discrete_before_transfer[:,i]))
-                sum_num = len(np.unique(dataread.data_train_discrete_before_transfer[:,i]))  
-               # print("sum_num {} i{} ".format(sum_num,i));   
+                sum_num = len(np.unique(dataread.all_data[:,i]))  
+                #print("sum_num {} i{} npunique {}".format(sum_num,i,np.unique(dataread.all_data[:,i])));   
               #  print("np.unique(dataread.data_test_discrete[:,i] {}".format(np.unique(dataread.data_train_discrete_before_transfer[:,i])) )
                 m, n = self.topology_som(sum_num)
-                som_feature = newSom.SOM(m, n, dim=sum_num) 
-                #if 0 in np.unique(dataread.data_train_discrete_before_transfer[:,i]):
-                #    som_feature = newSom.SOM(m, n, dim=sum_num)  
-                #else: som_feature = newSom.SOM(m , n, dim=sum_num+1)  
+                #som_feature = newSom.SOM(m, n, dim=sum_num) 
+                if 0 in np.unique(dataread.all_data[:,i]):
+                    som_feature = newSom.SOM(m, n, dim=sum_num)  
+                else: som_feature = newSom.SOM(m , n, dim=sum_num+1)  
 
                 soms.append(som_feature)
             

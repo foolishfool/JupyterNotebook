@@ -720,7 +720,7 @@ class UTDSM_EFOSOM():
         self.weights =[]
         for i in range(0,len(self.data_train_all_transferred)):
             #print("self.soms[i].dim {} i {}".format(self.soms[i].dim,i))
-            #print("i {}".format(i))
+           # print("i {}".format(i))
             self.soms[i].fit(self.data_train_all_transferred[i],showlog = True)
             self.weights.append(self.soms[i].weights0)
       

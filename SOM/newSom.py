@@ -126,9 +126,9 @@ class SOM():
         x_stack = np.stack([x]*(newWeights.shape[0]), axis=0)
         # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
         #if showlog:
-            #print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
-       # if x_stack.shape != newWeights.shape:
-       #     print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
+        #    print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
+        #if x_stack.shape != newWeights.shape:
+        #    print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
         distance = np.linalg.norm((x_stack - newWeights).astype(float), axis=1)
         # Find index of best matching unit
         return np.argmin(distance)
