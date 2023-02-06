@@ -125,7 +125,7 @@ class SOM():
         # when split_nubmer = 0 corresponds to weight0, split_nubmer n represent Wn
         x_stack = np.stack([x]*(newWeights.shape[0]), axis=0)
         # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
-        #if showlog:
+       # if showlog:
         #    print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
         #if x_stack.shape != newWeights.shape:
         #    print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))

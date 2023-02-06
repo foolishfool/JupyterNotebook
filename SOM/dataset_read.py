@@ -169,6 +169,39 @@ class DATAREAD():
             else: 
                 print("Unkonwn value {} at {}".format(X.at[i,name], name))
 
+    def stringToIntToddlerAutismDataSet(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+        #print(X[name])
+        for i in range(0, X.shape[0]):
+           
+            if  X.at[i,name]== ''   or  X.at[i,name]== 'nan':
+                X.at[i,name]= -1   
+            elif X.at[i,name]== 'f' or  X.at[i,name]== 'asian' or  X.at[i,name]== 'yes' or  X.at[i,name]== 'family member'or  X.at[i,name]== 'Yes':
+                X.at[i,name]= 0            
+            elif  X.at[i,name]== 'm'or  X.at[i,name]== 'black' or  X.at[i,name]== 'no'or  (X.at[i,name]== 'Health care professional'or  X.at[i,name]== 'Health Care Professional')or  X.at[i,name]== 'No':
+                X.at[i,name]=1
+            elif  X.at[i,name]== 'Others'or  X.at[i,name]== 'Self':
+                X.at[i,name]=2
+            elif  X.at[i,name]== 'Latino':
+                X.at[i,name]=3
+            elif  X.at[i,name]== 'middle eastern':
+                X.at[i,name]=4
+            elif  X.at[i,name]== 'mixed':
+                X.at[i,name]=5
+            elif  X.at[i,name]== 'Native Indian':
+                X.at[i,name]=6
+            elif  X.at[i,name]== 'Hispanic':
+                X.at[i,name]=7
+            elif  X.at[i,name]== 'Pacifica':
+                X.at[i,name]=8
+            elif  X.at[i,name]== 'south asian':
+                X.at[i,name]=9
+            elif  X.at[i,name]== 'White European':
+                X.at[i,name]=10
+            else: 
+                print("Unkonwn value {} at {}".format(X.at[i,name], name))
+
+
     def stringToHotelReservationDataSet(self,X,name):
         X[name] = X[name].astype(str).str.strip()
         #print(X[name])
