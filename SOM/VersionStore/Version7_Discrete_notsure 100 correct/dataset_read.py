@@ -336,7 +336,7 @@ class DATAREAD():
         
 
 
-    def initializedataset(self,Z,X,Y,attributute,unique_num):
+    def initializedataset(self,Z,X,Y,attributute):
          #X is traiing data  Y is test data all_data is X+Y
          self.X = X.sample(n =X.shape[0])
          self.data_test =  Y
@@ -356,30 +356,15 @@ class DATAREAD():
          self.data_discrete_indexes = []
     
          for (column_name, column) in data_train.transpose().iterrows():
-            print(len(X[column_name].unique()))
-            if len(X[column_name].unique())>unique_num: 
+            if len(X[column_name].unique())>40: 
                 self.data_continuous_indexes.append(column_name)
             else: 
                 self.data_discrete_indexes.append(column_name)
 
-         if self.data_continuous_indexes == []:
-            self.continuous_feature_num =0
-         else:
-            self.continuous_feature_num = len(self.data_continuous_indexes)
-         
-         
-         if self.data_discrete_indexes == []:
-            self.discrete_feature_num = 0
-         else:
-            self.discrete_feature_num = len(self.data_discrete_indexes)
-
-         print(f"self.data_continuous_indexes {self.data_continuous_indexes} " )
-      
          data_train_continuous = data_train[self.data_continuous_indexes]
          data_train_discrete = data_train[self.data_discrete_indexes]  
          data_test_continuous = data_test[self.data_continuous_indexes]
          data_test_discrete = data_test[self.data_discrete_indexes]  
-
 
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)
@@ -387,18 +372,17 @@ class DATAREAD():
          self.data_test = data_test.to_numpy(dtype=np.float64)
          #data that remove class data which has fewer data
          self.cleanedData = self.cleanedData.to_numpy(dtype=np.float64)
+         self.label_train = label_train.to_numpy(dtype=np.float64)
          self.cleanedLabel =  self.cleanedLabel.to_numpy(dtype=np.float64)
 
-         self.label_train = label_train.to_numpy(dtype=np.float64)
          self.label_test = label_test.to_numpy(dtype=np.float64)
-
          self.data_train_continuous = data_train_continuous.to_numpy(dtype=np.float64)
          self.data_train_discrete = data_train_discrete.to_numpy(dtype=np.float64)
 
          self.data_train_discrete_before_transfer = data_train_discrete.to_numpy(dtype=np.float64)
          self.data_test_continuous = data_test_continuous.to_numpy(dtype=np.float64)
          self.data_test_discrete = data_test_discrete.to_numpy(dtype=np.float64)
-         self.data_test_discrete_before_transfer = data_test_discrete.to_numpy(dtype=np.float64)
+         self.data_test_discrete_before_transer = data_test_discrete.to_numpy(dtype=np.float64)
 
          self.uniqueNumbers =[]
 
@@ -471,28 +455,24 @@ class DATAREAD():
 
          """
          scaler = StandardScaler().fit(self.data_train)
-         #print(f"self.data_train {self.data_train}")
+         print(f"self.data_train {self.data_train}")
          self.data_train_scaled = scaler.transform(self.data_train)
-         #print(f"data_train_scaled {self.data_train_scaled}")
+         print(f"data_train_scaled {self.data_train_scaled}")
          scaler2 = StandardScaler().fit(self.data_test)
-         self.data_test_scaled = scaler2.transform(self.data_test)
-        
+         self.data_test_scaled = scaler.transform(self.data_test)
+
          if self.data_train_continuous != [] :
             scaler3 = StandardScaler().fit(self.data_train_continuous)
             self.data_train_continuous = scaler3.transform(self.data_train_continuous)
          if self.data_test_continuous != [] :
             scaler4 = StandardScaler().fit(self.data_test_continuous)
             self.data_test_continuous = scaler4.transform(self.data_test_continuous)
-           
-         if self.data_test_discrete != []:
-             scaler5 = StandardScaler().fit(self.data_test_discrete)
-             self.data_test_discrete = scaler5.transform(self.data_test_discrete)
-         if self.data_train_discrete != []:
-            scaler6 = StandardScaler().fit(self.data_train_discrete)
-            self.data_train_discrete = scaler6.transform(self.data_train_discrete)
-         if self.cleanedData != []:
-            scaler7 = StandardScaler().fit(self.cleanedData)
-            self.cleanedData = scaler7.transform(self.cleanedData)
+        # scaler5 = StandardScaler().fit(self.data_test_discrete)
+       #  self.data_test_discrete = scaler5.transform(self.data_test_discrete)
+       #   scaler6 = StandardScaler().fit(self.data_train_discrete)
+       #   self.data_train_discrete = scaler6.transform(self.data_train_discrete)
+         scaler7 = StandardScaler().fit(self.cleanedData)
+         self.cleanedData = scaler7.transform(self.cleanedData)
 
         # discrete data do not use scaler
 
