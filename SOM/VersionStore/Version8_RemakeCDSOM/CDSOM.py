@@ -6,7 +6,6 @@ find intra communiyt in each neuron memberships and do the whole mapping and ret
 
 #from curses.ascii import NULL
 
-from cgi import test
 from sklearn import metrics
 from scipy import spatial
 import numpy as np
@@ -16,7 +15,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics.cluster import adjusted_rand_score
-from sklearn.metrics import jaccard_score
+
 
 # unsupervised continus and discrete som
 class CDSOM():
@@ -34,12 +33,10 @@ class CDSOM():
                  som_total_discrete_transferred, #the last som got 
                  data_train_all, 
                  data_train_continuous,
-                 data_train_discrete,
                  data_train_discrete_normalized,
                  data_train_discrete_onehotcode,
                  data_test_all,
                  data_test_continuous,
-                 data_test_discrete,
                  data_test_discrete_normalized,
                  data_test_discrete_onehotcode,
                  label_train_all,                       
@@ -72,10 +69,8 @@ class CDSOM():
         self.data_train_continuous = data_train_continuous   
         self.data_test_continuous = data_test_continuous
 
-
-        self.data_train_discrete_unnormalized = data_train_discrete 
-        self.data_train_discrete_normalized = data_train_discrete_normalized 
-        self.data_test_discrete_unnormalized = data_test_discrete   
+        
+        self.data_train_discrete_normalized = data_train_discrete_normalized   
         self.data_test_discrete_normalized = data_test_discrete_normalized
 
         self.data_train_discrete_onehotencoded = data_train_discrete_onehotcode
@@ -110,7 +105,7 @@ class CDSOM():
 
 
     def nmiScore(self,scorename, y_true, y_pred):
-        print(" nmi y_true{} unique{} y_pred {} unique {}".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
+        #print(" nmi y_true{}  y_pred {} ".format(y_true,y_pred))
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
             print("all_train_score_W0_n {}".format(self.all_train_score_W0_n ))  
@@ -157,13 +152,13 @@ class CDSOM():
 
         if(scorename == "test_discrete_score_W_discrete" ):
             self.test_discrete_score_W_discrete_n = normalized_mutual_info_score(y_true,y_pred)
-            print("test_discrete_score_W_discrete_n {}".format(self.test_discrete_score_W_discrete_n ))  
+            print("test_discrete_score_W_discrete {}".format(self.test_discrete_score_W_discrete_n ))  
         if(scorename == "train_discrete_score_W_discrete" ):
             self.train_discrete_score_W_discrete_n = normalized_mutual_info_score(y_true,y_pred)
-            print("train_discrete_score_W_discrete_n {}".format(self.train_discrete_score_W_discrete_n ))  
+            print("train_discrete_score_W_discrete {}".format(self.train_discrete_score_W_discrete_n ))  
     
     def ariScore(self,scorename, y_true, y_pred):
-        print(" nmi y_true{} unique{} y_pred {} unique {} ".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
+       # print(" ariScore y_true{}  y_pred {} ".format(y_true,y_pred))
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_a = adjusted_rand_score(y_true,y_pred)
             print("all_train_score_W0_a {}".format(self.all_train_score_W0_a ))  
@@ -186,7 +181,7 @@ class CDSOM():
         
         if(scorename == "train_discrete_score_W0" ):
             self.train_discrete_score_W0_a = adjusted_rand_score(y_true,y_pred)
-            print("train_discrete_score_W0_a  {}".format(self.train_discrete_score_W0_a ))  
+            print("train_discrete_score_W0 {}".format(self.train_discrete_score_W0_a ))  
 
         if(scorename == "train_continuous_score_W_continuous" ):
             self.train_continuous_score_W_continuous_a = adjusted_rand_score(y_true,y_pred)
@@ -206,10 +201,10 @@ class CDSOM():
 
         if(scorename == "test_discrete_score_W_discrete" ):
             self.test_discrete_score_W_discrete_a = adjusted_rand_score(y_true,y_pred)
-            print("test_discrete_score_W_discrete_a {}".format(self.test_discrete_score_W_discrete_a ))  
+            print("test_discrete_score_W_discrete {}".format(self.test_discrete_score_W_discrete_a ))  
         if(scorename == "train_discrete_score_W_discrete" ):
             self.train_discrete_score_W_discrete_a = adjusted_rand_score(y_true,y_pred)
-            print("train_discrete_score_W_discrete_a {}".format(self.train_discrete_score_W_discrete_a ))  
+            print("train_discrete_score_W_discrete {}".format(self.train_discrete_score_W_discrete_a ))  
     
     def get_indices_and_data_in_predicted_clusters(self,class_num_predicted,predicted_label,data_set):
             
@@ -238,7 +233,7 @@ class CDSOM():
             return clusters_indexes,clusters_datas
 
     # from data index to  [[2,35,34,3,23],[211,12,2,1]] get cluster index [[0,0,1,1] [0,0,1]]
-    def get_mapped_class_in_clusters(self,clusters_indexes,real_class_label):
+    def get_mapped_class_in_clusters(self,clusters_indexes):
         mapped_class_in_clusters = []
         #print(f"clusters_indexes {clusters_indexes} ")
         #initialize mapped_clases_in_clusters
@@ -247,7 +242,7 @@ class CDSOM():
 
         for j in range(0, len(clusters_indexes)):
             for item in clusters_indexes[j]:
-                mapped_class_in_clusters[j].append(real_class_label[item])
+                mapped_class_in_clusters[j].append(self.train_label_all[item])
 
         # mapped_clases_in_clusters = [[1,2,1,2,1,1],[2,2,2,2],[0,1,0]]
        # print(f" mapped_class_in_clusters {mapped_class_in_clusters} ")
@@ -611,142 +606,7 @@ class CDSOM():
 
         self.continuous_weights = np.array( self.continuous_weights)
         #print(f"self.continuous_weights {self.continuous_weights }" )
-    
-    def getuniquevalueindiscretedata(self, discrete_data):
-        self.discrete_unique_values = []
-        for i in range(0, len(discrete_data)):
-           # print(f"discrete_data i {discrete_data[i]}")
-            self.discrete_unique_values.append(np.unique(discrete_data[i]))
-           # print(f"np.nuique(discrete_data[i]) {np.unique(discrete_data[i])}")
 
-    def getCommanIndexesRatioInNeurons(self, feature_group, one_neuron_predict_group):
-        #using Jaccard similarity 
-       # print(f" feature_group {feature_group} one_neuron_predict_group {one_neuron_predict_group}")
-        #print(f"len feature_group  {len(feature_group)} len one_neuron_predict_group {len(one_neuron_predict_group)}")  
-       # similiary_score = jaccard_score(feature_group,one_neuron_predict_group)
-       # print(f" similiary_score {similiary_score}")
-        #return  similiary_score
-        return round(len(np.intersect1d(feature_group, one_neuron_predict_group))/len(feature_group),3)
-    def getFeatureGroups(self, feature_column_data):
-        #feature_group = dictionary{value:[indexes], value2: [indexes]} feature_column_data =
-        uniquenum = np.unique(feature_column_data)
-        feature_group = {}
-       # print(f" feature_column_data{ feature_column_data} ")
-        for i in range(0,len(feature_column_data)):
-            if len(feature_group)>=1:  
-                if  feature_column_data[i] in feature_group.keys():
-                    feature_group[feature_column_data[i]].append(i) 
-                else:
-                    feature_group[feature_column_data[i]] = [i]
-            else:
-                 #print(f" i  {i}, self.feature_column_data[i] {feature_column_data[i]}")
-                 feature_group[feature_column_data[i]] = [i]
-        #print(f" feature_group{ feature_group} ") 
-        return feature_group
-    
-    def getAllfeatureGroups(self):
-        self.all_feature_groups = {}
-        #print(f"np.shape(self.data_train_discrete_unnormalized)[1]{ np.shape(self.data_train_discrete_unnormalized)[1]}")
-        for i in range(0,np.shape(self.data_train_discrete_unnormalized)[1]):
-          #  print(f" i {i}  self.data_train_discrete_unnormalized[:,i]{ self.data_train_discrete_unnormalized[:,i]}")
-            self.all_feature_groups[i] = self.getFeatureGroups(self.data_train_discrete_unnormalized[:,i])
-           # print(f" i {i} self.all_feature_gropus {  self.all_feature_groups[i] } ")
-
-    def findmaxprobablity(self,x,neuron_num):
-        result_probability_multiply = np.zeros(neuron_num)
-        result_matrix = []
-        for i in range(0, len(x)):
-            #print(f"i{ i} self.all_features_mapping[i].keys() {self.all_features_mapping[i].keys()}")
-            for key in self.all_features_mapping[i].keys():
-                #print(f" i {j} len(x){len(x)} x {x}")
-                if x[i] == key:
-                    current_feature_probability = self.all_features_mapping[i][key]
-                    #print(f" current_feature_probability sum {np.sum(current_feature_probability)}")
-                    if i == 0:
-                        result_probability_multiply = current_feature_probability
-                        #print(f" reslut_probability 2 {result_probability_multiply}")
-                    #print(f"i {i} x[i] {x[i]} key{key}")
-                    else:                   
-                        result_probability_multiply = np.add(result_probability_multiply,current_feature_probability) 
-
-                    result_matrix.append(current_feature_probability)                   
-
-        result_matrix = np.array(result_matrix)
-        match_neuron_index = self.getAdjustedNeuronProbability(result_matrix,result_probability_multiply)
-        #print(f"np.argmax(reslut_probability) {reslut_probability}")
-        return match_neuron_index
-
-
-    def getAdjustedNeuronProbability(self, result_probability_matrix,result_probability_multiply):
-        choosen_neurons_index = []
-        for i in range(len(result_probability_multiply)):
-            if result_probability_multiply[i]  != 0:
-                choosen_neurons_index.append(i)
-        result_probability_matrix_remove_zero = result_probability_matrix[:,choosen_neurons_index] # only choose columns that have no zero
-
-        result_probability = self.getNewProbabiltyBasedOnNewMatrix(result_probability_matrix_remove_zero)
-        # print(f" result_probability {result_probability}")
-        return choosen_neurons_index[np.argmax(result_probability)]
-        # get zero value in each row:
-
-    def getNewProbabiltyBasedOnNewMatrix(self,result_probability_matrix_remove_zero ):
-        for i in range(0,result_probability_matrix_remove_zero.shape[1]) :
-            current_column = result_probability_matrix_remove_zero[:,i]
-            denominator = np.sum(current_column)
-            for j in range(0, len(current_column)):
-                current_column[j] = current_column[j] /denominator
-            result_probability_matrix_remove_zero[:,i] = current_column #update old data
-
-        #get last probablity based on new result_probability_matrix_remove_zero
-        result = []
-        denominator2 = 0
-        for j in range(0,result_probability_matrix_remove_zero.shape[0]) :
-            current_row = result_probability_matrix_remove_zero[j:]
-            denominator2 = np.prod(current_row) + denominator2
-            for i in range(0, len(current_row)):
-                current_row[i] = current_row[i] /denominator2
-                result.append(current_row[i])
-        return result
-
-    def predictBasedonNeuronProbability(self,X):
-        #print(f" X {X}")
-       # print(f" self.all_features_mapping {self.all_features_mapping}")
-        labels = np.array([self.findmaxprobablity(x,self.som_discrete_original.weights0.shape[0]) for x in X])
-        print(f" labels {labels}")
-        return labels
-    
-
-    def predictBasedonNeuronProbability(self,X,som_probability):
-        #print(f" X {X}")
-       # print(f" self.all_features_mapping {self.all_features_mapping}")
-        labels = som_probability.predict(X)
-        print(f" labels {labels}")
-        return labels
-    
-    def getOneSingleFeatureNeuronProbability(self, one_feature_dic, neuron_predicted_groups):
-        onesinglefeatureneuronprobablity = {}
-       # print(f"one_feature_dic.keys() {one_feature_dic.keys()} ")
-        for key in one_feature_dic.keys():
-            probability_list = []
-            for i in range(0,len(neuron_predicted_groups)) :  
-                #print("New neuron _predicted group !!!")       
-                probability = self.getCommanIndexesRatioInNeurons(one_feature_dic[key],neuron_predicted_groups[i]) 
-                #print(f"i {i} neuron_predicted_groups[i] {len(neuron_predicted_groups[i])}")  
-                probability_list.append(probability)
-            #print(f"key {key} probability_list{probability_list}")
-            probability_list = np.array(probability_list)
-            onesinglefeatureneuronprobablity[key] = probability_list
-           # print(f"key {key} onesinglefeatureneuronprobablity.argmax) {onesinglefeatureneuronprobablity[key].argmax()} ")
-        return onesinglefeatureneuronprobablity
-
-    def getEachNeuronProbabilityOfEachFeatureValue(self,neuron_predicted_groups):
-        self.all_features_mapping ={}
-        for i in range(0, len(self.all_feature_groups)):
-            #print(f"  feature  {i}!!!!!!!!!!!")
-            self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability(self.all_feature_groups[i],neuron_predicted_groups)
-
-
-        
     def run(self):
         """
         score_type 0 purity 1 numi 2 rai
@@ -925,55 +785,29 @@ class CDSOM():
         *****************************************************************************************************************************************
         discrete data trained by som 
         """
-        #self.getuniquevalueindiscretedata(self.data_train_discrete_unnormalized)
 
-        self.getAllfeatureGroups()
-
-  
 
         self.som_discrete_original.fit(self.data_train_discrete_normalized)
         weight_discrete_original = self.som_discrete_original.weights0
         self.train_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_train_discrete_normalized,weight_discrete_original)   
         predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_normalized)   
-        
-       # self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
-
-        
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+  
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes) ,0)  
         # the value in predicted_clusters are true label value    
         transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
         self.getScore("train_discrete_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
-        
-        #*** when validate needs to use current mapping(the real situation mappping) rather than the training sessino mapping
+
         self.test_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_test_discrete_normalized,weight_discrete_original)   
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.test_discrete_W0_predicted_label,self.data_test_discrete_normalized)   
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.test_label_all) ,0)    
-        transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)   
+        transferred_predicted_label_test_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.test_discrete_W0_predicted_label)    
         self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
 
-        predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_train_discrete_unnormalized)  # predicted_clusters_indexes = [1,1,2,3,1,1,2,1]
-        print(f"predicted_clusters_indexes {predicted_clusters_indexes}")
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_discrete_original.shape[0], predicted_clusters_indexes,self.data_train_discrete_unnormalized) 
-      
-       # print(f"predicted_clusters_transferred {predicted_clusters_transferred}")
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.train_label_all) ,2)  
-        transferred_predicted_label_train_W_transferred =  self.convertPredictedLabelValue(predicted_clusters_indexes,self.PLabel_to_Tlabel_Mapping_W_Discrete)      
-        self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W_transferred)
 
 
-
-        predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_test_discrete_unnormalized)
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_discrete_original.shape[0], predicted_clusters_indexes,self.data_test_discrete_unnormalized) 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue(predicted_clusters_indexes,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
-        self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
-
-        """
 
         self.discrete_feateure_weights =[]
         for i in range(0,len(self.data_train_discrete_onehotencoded)):
-            #scaler0 = StandardScaler().fit(self.data_train_discrete_onehotencoded[i])
-           # self.data_train_discrete_onehotencoded[i] = scaler0.transform(self.data_train_discrete_onehotencoded[i])
+            scaler0 = StandardScaler().fit(self.data_train_discrete_onehotencoded[i])
+            self.data_train_discrete_onehotencoded[i] = scaler0.transform(self.data_train_discrete_onehotencoded[i])
             #print("self.soms[i].weights0 before {}  ".format(self.soms[i].weights0))
             self.soms_discrete[i].fit(self.data_train_discrete_onehotencoded[i])
             self.discrete_feateure_weights.append(self.soms_discrete[i].weights0)
@@ -987,8 +821,8 @@ class CDSOM():
         self.transferred_test_discrete_data = []
       
         for i in range(0,len(self.data_test_discrete_onehotencoded)):
-            scaler1 = StandardScaler().fit(self.data_test_discrete_onehotencoded[i])
-            self.data_test_discrete_onehotencoded[i] = scaler1.transform(self.data_test_discrete_onehotencoded[i])
+          #  scaler1 = StandardScaler().fit(self.data_test_discrete_onehotencoded[i])
+           # self.data_test_discrete_onehotencoded[i] = scaler1.transform(self.data_test_discrete_onehotencoded[i])
            # print("i {},self.data_test_all_transferred[i] {} ".format(i, self.data_test_all_transferred[i]))
             predicted_new_label = self.soms_discrete[i].predict(self.data_test_discrete_onehotencoded[i], self.discrete_feateure_weights[i])
            # print(" predicted_new_label {} I {} som[] i {}".format(np.unique(predicted_new_label), i,self.soms[i].m*self.soms[i].n))
@@ -997,11 +831,11 @@ class CDSOM():
         self.transferred_train_discrete_data = np.array(self.transferred_train_discrete_data).T
         self.transferred_test_discrete_data = np.array(self.transferred_test_discrete_data).T
         
-      #  scaler = StandardScaler().fit(self.transferred_train_discrete_data) 
-       # self.transferred_train_discrete_data_normalized = scaler.transform(self.transferred_train_discrete_data)
+        scaler = StandardScaler().fit(self.transferred_train_discrete_data) 
+        self.transferred_train_discrete_data_normalized = scaler.transform(self.transferred_train_discrete_data)
         
-       # scaler2 = StandardScaler().fit(self.transferred_test_discrete_data)
-      #  self.transferred_test_discrete_data_normalized = scaler2.transform(self.transferred_test_discrete_data)
+        scaler2 = StandardScaler().fit(self.transferred_test_discrete_data)
+        self.transferred_test_discrete_data_normalized = scaler2.transform(self.transferred_test_discrete_data)
 
         self.som_total_discrete_transferred.fit(self.transferred_train_discrete_data_normalized)
         weight0_total_discrete = self.som_total_discrete_transferred.weights0
@@ -1018,7 +852,7 @@ class CDSOM():
         transferred_predicted_label_test_W_transferred = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Discrete,self.test_discrete_predicted_label_transferred)    
         self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
 
-        """
+
         if self.test_discrete_score_W_discrete_n < self.test_discrete_score_W0_n:
              print("Not good nmi result for discrete features !!!!!")
         if self.test_discrete_score_W_discrete_a < self.test_discrete_score_W0_a:

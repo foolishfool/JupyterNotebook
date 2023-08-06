@@ -5,10 +5,7 @@ from scipy.interpolate import make_interp_spline, BSpline
 import matplotlib.pyplot as plt
 from typing import List
 import newSom
-import TDSM_SOM
-import UTDSM
 import UTDSM_EFOSOM
-import UTDSM_ONEHOTCODE
 import numpy as np
 from sklearn.metrics import silhouette_score
 import scipy.stats as stats

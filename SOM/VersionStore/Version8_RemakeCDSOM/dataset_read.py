@@ -368,14 +368,14 @@ class DATAREAD():
          else:
             self.discrete_feature_num = len(self.data_discrete_indexes)
 
-        
+         #print(f"self.data_continuous_indexes {self.data_continuous_indexes} " )
       
          data_train_continuous = data_train[self.data_continuous_indexes]
          data_train_discrete = data_train[self.data_discrete_indexes]  
          data_test_continuous = data_test[self.data_continuous_indexes]
          data_test_discrete = data_test[self.data_discrete_indexes]  
 
-         #print(f"self.data_discrete_indexes {self.data_discrete_indexes} " )
+
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)
          self.all_data= self.all_data.to_numpy(dtype=np.float64)
@@ -389,8 +389,6 @@ class DATAREAD():
 
          self.data_train_continuous = data_train_continuous.to_numpy(dtype=np.float64)
          self.data_train_discrete = data_train_discrete.to_numpy(dtype=np.float64)
-
-         print(f" column number self.data_train_discrete { self.data_train_discrete.shape[1]}")
 
          self.data_train_discrete_before_transfer = data_train_discrete.to_numpy(dtype=np.float64)
          self.data_test_continuous = data_test_continuous.to_numpy(dtype=np.float64)
