@@ -11,6 +11,7 @@ similar to clustering method in sklearn.
 Created: 1-27-21
 """
 
+from math import e
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from tensorflow.keras.utils import to_categorical
@@ -245,19 +246,50 @@ class DATAREAD():
                 print("Unkonwn value {}".format(X.at[i,name]))
 
     def stringToIntDataUserModelDataSet(self,X,name):
-        X[name] = X[name].astype(str).str.strip()
         #print(X[name])
         for i in range(0, X.shape[0]):
-            if  X.at[i,name]== 'very_low':
+            if isinstance(X.at[i,name], str):
+                if  X.at[i,name]== 'very_low':
+                    X.at[i,name]=0            
+                elif  X.at[i,name]== 'Low' :
+                    X.at[i,name]=1
+                elif  X.at[i,name]== 'Middle':
+                    X.at[i,name]=2 
+                elif  X.at[i,name]== 'High':
+                    X.at[i,name]=3 
+                else: 
+                    print("Unkonwn value {}".format(X.at[i,name]))
+
+    def stringToIntNetflixDataSet(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+     
+        for i in range(0, X.shape[0]):
+            if  X.at[i,name]== '' :
+                X.at[i,name]= -1      
+            elif  X.at[i,name]== 'Basic'or  X.at[i,name]== 'United States' or  X.at[i,name]== 'Male' or  X.at[i,name]== 'Smartphone' :
                 X.at[i,name]=0            
-            elif  X.at[i,name]== 'Low' :
+            elif  X.at[i,name]== 'Premium'or  X.at[i,name]== 'Canada' or  X.at[i,name]== 'Female' or  X.at[i,name]== 'Tablet' :
                 X.at[i,name]=1
-            elif  X.at[i,name]== 'Middle':
+            elif  X.at[i,name]== 'Standard'or  X.at[i,name]== 'United Kingdom' or  X.at[i,name]== 'Smart TV' :
                 X.at[i,name]=2 
-            elif  X.at[i,name]== 'High':
+            elif  X.at[i,name]== 'Germany' or  X.at[i,name]== 'Laptop' :
                 X.at[i,name]=3 
+            elif  X.at[i,name]== 'France' :
+                X.at[i,name]=4 
+            elif  X.at[i,name]== 'Brazil' :
+                X.at[i,name]=5             
+            elif  X.at[i,name]== 'Mexico' :
+                X.at[i,name]=6             
+            elif  X.at[i,name]== 'Spain' :
+                X.at[i,name]=7             
+            elif  X.at[i,name]== 'Italy' :
+                X.at[i,name]=8
+            elif  X.at[i,name]== 'Australia' :
+                X.at[i,name]=9
             else: 
-                print("Unkonwn value {}".format(X.at[i,name]))
+                print(f"Unkonwn value {X.at[i,name]} type {type(X.at[i,name])}")
+
+
 
     def replaceNANinDataset(self,X):
         for col_name in X.columns:
@@ -309,7 +341,42 @@ class DATAREAD():
                 X.at[i,name]=4  
             else: 
                 print("Unkonwn value {}".format(X.at[i,name]))
-                
+
+
+    def stringToIntCardiovascularDataSet(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+        #print(X[name])
+        for i in range(0, X.shape[0]):
+            if  X.at[i,name]== '' :
+                X.at[i,name]= -1            
+            elif  X.at[i,name]== 'Poor' or  X.at[i,name]== 'Within the past 2 years'or  X.at[i,name]== 'Yes'or  X.at[i,name]== 'Female'or  X.at[i,name]== '18-24':
+                X.at[i,name]=0 
+            elif  X.at[i,name]== 'Very Good'or  X.at[i,name]== 'Within the past year'or  X.at[i,name]== 'No'or  X.at[i,name]== 'Male'or  X.at[i,name]== '25-29':
+                X.at[i,name]=1 
+            elif  X.at[i,name]== 'Good'  or  X.at[i,name]== '5 or more years ago'or  X.at[i,name]== 'No, pre-diabetes or borderline diabetes' or  X.at[i,name]== '30-34':
+                X.at[i,name]=2
+            elif  X.at[i,name]== 'Fair'or  X.at[i,name]== 'Within the past 5 years'or  X.at[i,name]== 'Yes, but female told only during pregnancy'or  X.at[i,name]== '35-39':
+                X.at[i,name]=3
+            elif  X.at[i,name]== 'Excellent'or  X.at[i,name]== 'Never'or  X.at[i,name]== '40-44':
+                X.at[i,name]=4  
+            elif  X.at[i,name]== '45-49':
+                X.at[i,name]=5
+            elif  X.at[i,name]== '50-54':
+                X.at[i,name]=6
+            elif  X.at[i,name]== '55-59':
+                X.at[i,name]=7
+            elif  X.at[i,name]== '60-64':
+                X.at[i,name]=8
+            elif  X.at[i,name]== '65-69':
+                X.at[i,name]=9
+            elif  X.at[i,name]== '70-74':
+                X.at[i,name]=10
+            elif  X.at[i,name]== '75-79':
+                X.at[i,name]=11
+            elif  X.at[i,name]== '80+':
+                X.at[i,name]=11
+            else: 
+                print("Unkonwn value {}".format(X.at[i,name]))            
     #remove data and label which in a class, but the total number is too small in another way to reduce noise data
     def removeminorpartdata(self,Label,Data):
         allindexes = {}
@@ -418,9 +485,13 @@ class DATAREAD():
          if self.data_test_discrete != []:
              scaler5 = StandardScaler().fit(self.data_test_discrete)
              self.data_test_discrete_normalized = scaler5.transform(self.data_test_discrete)
+         else:
+            self.data_test_discrete_normalized =[]
          if self.data_train_discrete != []:
             scaler6 = StandardScaler().fit(self.data_train_discrete)
             self.data_train_discrete_normalized = scaler6.transform(self.data_train_discrete)
+         else:
+            self.data_train_discrete_normalized =[]
          if self.cleanedData != []:
             scaler7 = StandardScaler().fit(self.cleanedData)
             self.cleanedData = scaler7.transform(self.cleanedData)

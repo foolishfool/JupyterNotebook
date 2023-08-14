@@ -6,18 +6,20 @@ find intra communiyt in each neuron memberships and do the whole mapping and ret
 
 #from curses.ascii import NULL
 
-from cgi import test
+from asyncio.windows_events import NULL
 from sklearn import metrics
 from scipy import spatial
 import numpy as np
 import math
 import operator
+import copy
+from numpy import array
 import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.metrics import jaccard_score
-
+import newSom
 # unsupervised continus and discrete som
 class CDSOM():
     """
@@ -59,7 +61,7 @@ class CDSOM():
        
         self.som = som  
         self.som_continuous = som_continuous 
-        self.soms_discrete = soms_discrete 
+        self.soms_discrete = soms_discrete  
         self.som_total_discrete_transferred = som_total_discrete_transferred  
         self.som_discrete_original = som_discrete_original  
         # initial cluster numbers in TDSM_SOM, which is the neuron number in som
@@ -110,7 +112,7 @@ class CDSOM():
 
 
     def nmiScore(self,scorename, y_true, y_pred):
-        print(" nmi y_true{} unique{} y_pred {} unique {}".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
+       # print(" nmi y_true{} unique{} y_pred {} unique {}".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
             print("all_train_score_W0_n {}".format(self.all_train_score_W0_n ))  
@@ -163,7 +165,7 @@ class CDSOM():
             print("train_discrete_score_W_discrete_n {}".format(self.train_discrete_score_W_discrete_n ))  
     
     def ariScore(self,scorename, y_true, y_pred):
-        print(" nmi y_true{} unique{} y_pred {} unique {} ".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
+      #  print(" nmi y_true{} unique{} y_pred {} unique {} ".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_a = adjusted_rand_score(y_true,y_pred)
             print("all_train_score_W0_a {}".format(self.all_train_score_W0_a ))  
@@ -250,9 +252,16 @@ class CDSOM():
                 mapped_class_in_clusters[j].append(real_class_label[item])
 
         # mapped_clases_in_clusters = [[1,2,1,2,1,1],[2,2,2,2],[0,1,0]]
-       # print(f" mapped_class_in_clusters {mapped_class_in_clusters} ")
+       # for x in mapped_class_in_clusters:
+       #    # print(f"x : {x}")
+       #    print(f" x {self.realpropationofclasslabelinclusters(x,mapped_class_in_clusters.index(x))} ")
         return mapped_class_in_clusters
-          
+    
+    def realpropationofclasslabelinclusters(self,clusters,i):
+        #print(f" cluster len {len(clusters)}")
+        keys, values = np.unique(clusters, return_counts =True)
+        self.drawnDistrubitonofrealclassIneachNeuron(keys,values,i)
+
     def getLabelMapping(self,predicted_class_label_in_each_cluster,Wtype  = 0):
         """
          predicted_class_label  = [[1,2,1,1],[3,3,3]]  the value in is the true value in class_label
@@ -286,6 +295,8 @@ class CDSOM():
     def getMaxRepeatedElements(self, list):
         #Count number of occurrences of each value in array of non-negative ints.
         counts = np.bincount(list)
+       # print(f"counts  {counts}  list len{len(list)}")
+        #print(f"self.realpropationofclasslabelinclusters(list) {self.realpropationofclasslabelinclusters(list)}")
         #Returns the indices of the maximum values along an axis.
         return np.argmax(counts)
 
@@ -321,13 +332,13 @@ class CDSOM():
 
     
     #get a dictionary with nodes has decsending distance with cluster center
-    def split_continuous_data(self, targetgroup_index,cluster_center):
+    def split_continuous_data(self,data_train_continuous, targetgroup_index,cluster_center):
         """
         targetgroup_index : the group (cluster) which will be split
         """
         sorted_data_dict = {}
         for idx in targetgroup_index:     
-            distance = np.linalg.norm((self.data_train_continuous[idx] - cluster_center).astype(float))
+            distance = np.linalg.norm((data_train_continuous[idx] - cluster_center).astype(float))
             if distance >0:
                 sorted_data_dict[idx] = distance
             #if distance == 0:
@@ -343,46 +354,46 @@ class CDSOM():
         return find_node
 
     # get all nodes' distance to the cluster center
-    def get_allnode_distance_to_center(self, target_node,  group_index, group_center):
+    def get_allnode_distance_to_center(self, data_train_continuous,target_node,  group_index, group_center):
         sorted_data_dict = {}
         distances = {}
 
-        for idx in group_index:     
-            distance = np.linalg.norm((self.data_train_continuous[idx] - target_node).astype(float))
+        for idx in group_index:         
+            distance = np.linalg.norm((data_train_continuous[idx] - target_node).astype(float))
             if distance >0 :
                 sorted_data_dict[idx] =distance  
 
         sorted_dict = dict(sorted(sorted_data_dict.items(), key=operator.itemgetter(1),reverse=False))
 
         for key in sorted_dict:
-            distance_intra = np.linalg.norm((self.data_train_continuous[key] - group_center).astype(float))
+            distance_intra = np.linalg.norm((data_train_continuous[key] - group_center).astype(float))
             distances[key] = distance_intra        
        
         return sorted_dict,distances
 
     # get all the inter node that has smaller distance to the target data, then target data to its cluster center 
-    def get_intra_continuous_community_nodes(self,sorted_dict, intra_center):
+    def get_intra_continuous_community_nodes(self,data_train_continuous,sorted_dict, intra_center):
         community_nodes = []
         community_nodes_keys = []
 
         for key in sorted_dict:  
             #**** cannot <= when == is itself, may cause one data one community       
-            distance_intra = np.linalg.norm((self.data_train_continuous[key] - intra_center).astype(float))
+            distance_intra = np.linalg.norm((data_train_continuous[key] - intra_center).astype(float))
             if sorted_dict[key] < distance_intra*self.community_distance:
                 #print("sorted_dict[key {} key {} distance_intra{}".format(sorted_dict[key],key,distance_intra ))
-                community_nodes.append(self.data_train_continuous[key])
+                community_nodes.append(data_train_continuous[key])
                 #print("key intra {}".format(key))
                 community_nodes_keys.append(key)
         return community_nodes,community_nodes_keys
 
 
-    def get_inter_continuous_community_nodes(self,sorted_dict,distances_inter):
+    def get_inter_continuous_community_nodes(self,data_train_continuous,sorted_dict,distances_inter):
         community_nodes = []
         community_nodes_keys = []
       
         for key in sorted_dict:
             if sorted_dict[key] < distances_inter[key]*self.community_distance:
-                community_nodes.append(self.data_train_continuous[key])
+                community_nodes.append(data_train_continuous[key])
                 community_nodes_keys.append(key)
     
         return community_nodes,community_nodes_keys
@@ -393,8 +404,8 @@ class CDSOM():
         Find the index of the best matching unit for the input vector x.
         """  
         #initial distance
-
-        Y = np.array(Y)
+       # print(f"Y {(Y)}")
+        #Y = np.array(Y)
         firstindex = 0
         for i in range(len(Y)):
             if Y[i]!= []:
@@ -534,23 +545,23 @@ class CDSOM():
                 list_object.pop(idx)
     
 
-    def test_W_continuous(self):
+    def test_W_continuous(self,data_train_continuous, data_test_continuous,all_split_datas_continuous):
 
 
 
-        self.train_W_continuous_predicted_label = self.predict_based_continuous_splitdata(self.data_train_continuous,self.all_split_datas_continuous)    
+        self.train_W_continuous_predicted_label = self.predict_based_continuous_splitdata(data_train_continuous,all_split_datas_continuous)    
         #self.train_W_continuous_predicted_label = self.som_continuous.predict(self.data_train_continuous,self.som_continuous.weights0)   
 
-        predicted_clusters_indexes,b = self.get_indices_and_data_in_predicted_clusters(len(self.all_split_datas_continuous),self.train_W_continuous_predicted_label,self.data_train_continuous)
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes),1)  
+        predicted_clusters_indexes,b = self.get_indices_and_data_in_predicted_clusters(len(all_split_datas_continuous),self.train_W_continuous_predicted_label,data_train_continuous)
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all),1)  
 
         
         transferred_predicted_label_train_W_continuous =  self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Continous,self.train_W_continuous_predicted_label)                 
         self.getScore("train_continuous_score_W_continuous",self.train_label_all,transferred_predicted_label_train_W_continuous)      
 
         
-        self.test_W_Continuous_predicted_label = self.predict_based_continuous_splitdata(self.data_test_continuous,self.all_split_datas_continuous) 
-        #self.test_W_Continuous_predicted_label = self.som_continuous.predict(self.data_test_continuous,self.som_continuous.weights0)   
+        self.test_W_Continuous_predicted_label = self.predict_based_continuous_splitdata(data_test_continuous,all_split_datas_continuous) 
+
         transferred_predicted_label_test_W_continuous = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Continous,self.test_W_Continuous_predicted_label)   
         #print("transferred_predicted_label_test {}".format(transferred_predicted_label_test))     
         self.getScore("test_continuous_score_W_continuous",self.test_label_all,transferred_predicted_label_test_W_continuous)
@@ -598,6 +609,20 @@ class CDSOM():
             print("****************")
         else:
             self.outliner_clusters.append(i)
+
+    def drawnDistrubitonofrealclassIneachNeuron(self,keys,values,i):
+
+        
+        fig = plt.figure(figsize = (4, 2))
+        
+        # creating the bar plot
+        plt.bar(keys, values, color ='maroon',
+                width = 0.4)
+        
+        plt.xlabel("Class Index")
+        plt.ylabel("No. of class index")
+        plt.title("Distribution of ground truth class index in neuron " + str(i))
+        plt.show()
 
 
     def getWcontinouswithSplitData(self,newclustered_datas):
@@ -652,8 +677,26 @@ class CDSOM():
             self.all_feature_groups[i] = self.getFeatureGroups(self.data_train_discrete_unnormalized[:,i])
            # print(f" i {i} self.all_feature_gropus {  self.all_feature_groups[i] } ")
 
+
+    def transferdataToprobabilityrepresentation(self, x, neuron_num):
+        result_probability_sum_vector = np.zeros(neuron_num)
+        for i in range(0, len(x)):
+            for key in self.all_features_mapping[i].keys():
+                if x[i] == key:
+                    current_feature_probability_vector = self.all_features_mapping[i][key]  #current_feature_probability_vector = [0.1,0,0.2,0.7]
+                    #print(f" current_feature_probability sum {np.sum(current_feature_probability)}")
+                    if i == 0:
+                        result_probability_sum_vector = current_feature_probability_vector
+                        #print(f" reslut_probability 2 {result_probability_multiply}")
+                    #print(f"i {i} x[i] {x[i]} key{key}")
+                    else:                   
+                        result_probability_sum_vector = np.add(result_probability_sum_vector,current_feature_probability_vector) 
+        #print(f" result_probability_sum_vector {result_probability_sum_vector}")
+        return result_probability_sum_vector
+
+                        
     def findmaxprobablity(self,x,neuron_num):
-        result_probability_multiply = np.zeros(neuron_num)
+        result_probability_sum = np.zeros(neuron_num)
         result_matrix = []
         for i in range(0, len(x)):
             #print(f"i{ i} self.all_features_mapping[i].keys() {self.all_features_mapping[i].keys()}")
@@ -663,16 +706,16 @@ class CDSOM():
                     current_feature_probability = self.all_features_mapping[i][key]
                     #print(f" current_feature_probability sum {np.sum(current_feature_probability)}")
                     if i == 0:
-                        result_probability_multiply = current_feature_probability
+                        result_probability_sum = current_feature_probability
                         #print(f" reslut_probability 2 {result_probability_multiply}")
                     #print(f"i {i} x[i] {x[i]} key{key}")
                     else:                   
-                        result_probability_multiply = np.add(result_probability_multiply,current_feature_probability) 
+                        result_probability_sum = np.add(result_probability_sum,current_feature_probability) 
 
                     result_matrix.append(current_feature_probability)                   
 
         result_matrix = np.array(result_matrix)
-        match_neuron_index = self.getAdjustedNeuronProbability(result_matrix,result_probability_multiply)
+        match_neuron_index = self.getAdjustedNeuronProbability(result_matrix,result_probability_sum)
         #print(f"np.argmax(reslut_probability) {reslut_probability}")
         return match_neuron_index
 
@@ -711,17 +754,27 @@ class CDSOM():
     def predictBasedonNeuronProbability(self,X):
         #print(f" X {X}")
        # print(f" self.all_features_mapping {self.all_features_mapping}")
-        labels = np.array([self.findmaxprobablity(x,self.som_discrete_original.weights0.shape[0]) for x in X])
+
+             # the som which will be used in new representation of data (the probality of each neuron) which is mxn n is the number of neuron and m is the number of data
+        labels = np.array([self.findmaxprobablity(x,self.som.weights0.shape[0]) for x in X])
         print(f" labels {labels}")
         return labels
     
+    def trainNewSomWithFeatureProbabilityData(self,X):
+        dim= self.som_discrete_original.weights0.shape[0]
+        m, n = self.topology_som(dim)
+        self.som_probability = newSom.SOM(m=m, n= n, dim=dim) 
+       # print(f" X {X}")
 
-    def predictBasedonNeuronProbability(self,X,som_probability):
-        #print(f" X {X}")
-       # print(f" self.all_features_mapping {self.all_features_mapping}")
-        labels = som_probability.predict(X)
-        print(f" labels {labels}")
-        return labels
+        transefered_X = np.array([self.transferdataToprobabilityrepresentation(x,dim) for x in X])
+       
+      
+        self.som_probability.fit(transefered_X)
+        return self.som_probability.predict(transefered_X, self.som_probability.weights0)   
+    
+    def predcitTestDatwithSOMProbability(self,X,neuron_num):
+        transefered_X = np.array([self.transferdataToprobabilityrepresentation(x,neuron_num) for x in X])
+        return self.som_probability.predict(transefered_X, self.som_probability.weights0)   
     
     def getOneSingleFeatureNeuronProbability(self, one_feature_dic, neuron_predicted_groups):
         onesinglefeatureneuronprobablity = {}
@@ -742,8 +795,23 @@ class CDSOM():
     def getEachNeuronProbabilityOfEachFeatureValue(self,neuron_predicted_groups):
         self.all_features_mapping ={}
         for i in range(0, len(self.all_feature_groups)):
-            #print(f"  feature  {i}!!!!!!!!!!!")
+           # print(f"  feature  {i}!!!!!!!!!!!")
             self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability(self.all_feature_groups[i],neuron_predicted_groups)
+    
+    
+    def topology_som(self, som_num):
+            start = int(np.sqrt(som_num))
+            factor = som_num / start
+            while not self.is_integer(factor):
+                start += 1
+                factor = som_num / start
+            return int(factor), start
+
+    def is_integer(self,number):
+            if int(number) == number:
+                return True
+            else:
+                return False
 
 
         
@@ -785,24 +853,28 @@ class CDSOM():
         continuous data trained by som 
         """
 
-        """
+    
         # continuous
-        self.som_continuous.fit(self.data_train_continuous)
+       #!!!! self.som_continuous.fit(self.data_train_continuous) 
+        self.som_continuous.fit(self.data_train_discrete_normalized) 
+        
         #print(f"weight_continuous 0 {weight_continuous }" )
-        self.train_continuous_W0_predicted_label = self.som_continuous.predict(self.data_train_continuous,self.som_continuous.weights0)   
+        #!!!! self.train_continuous_W0_predicted_label = self.som_continuous.predict(self.data_train_continuous,self.som_continuous.weights0)   
+        self.train_continuous_W0_predicted_label = self.som_continuous.predict(self.data_train_discrete_normalized,self.som_continuous.weights0)   
        # print(f"train_continuous_W0_predicted_label  {self.train_continuous_W0_predicted_label } ")
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_continuous.weights0.shape[0], self.train_continuous_W0_predicted_label,self.data_train_continuous)   
+        #!!!! predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_continuous.weights0.shape[0], self.train_continuous_W0_predicted_label,self.data_train_continuous)   
       
         
-        
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_continuous.weights0.shape[0], self.train_continuous_W0_predicted_label,self.data_train_discrete_normalized)   
         #predicted_clusters  [[23,31,21,2],[1,3,5,76],[45,5,12]] index in data_train in some situation, it will have []
 
 
         # the value in predicted_clusters are true label value  
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes),0)  
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all),0)  
         transferred_predicted_label_train_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.train_continuous_W0_predicted_label)    
         self.getScore("train_continuous_score_W0",self.train_label_all,transferred_predicted_label_train_continuous_W0)
 
+       #!!!! self.test_continuous_W0_predicted_label = self.som_continuous.predict(self.data_test_continuous,self.som_continuous.weights0)  
         self.test_continuous_W0_predicted_label = self.som_continuous.predict(self.data_test_continuous,self.som_continuous.weights0)  
         
         transferred_predicted_label_test_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.test_continuous_W0_predicted_label)    
@@ -841,7 +913,7 @@ class CDSOM():
                 # get inter community nodes
                 for j in range(0,len(searched_datas)):
                     if j != i:
-                        sorted_dict_inter, distances_inter =  self.get_allnode_distance_to_center(current_check_node,predicted_clusters_indexes[j],self.som_continuous.weights0[j])
+                        sorted_dict_inter, distances_inter =  self.get_allnode_distance_to_center( data_train_continuous,current_check_node,predicted_clusters_indexes[j],self.som_continuous.weights0[j])
                         new_inter_community_nodes,new_inter_community_nodes_keys = self.get_inter_continuous_community_nodes(sorted_dict_inter,distances_inter)
                       #  print(f"new_inter_community_nodes_keys {new_inter_community_nodes_keys}")
                         if new_inter_community_nodes != []:
@@ -916,10 +988,217 @@ class CDSOM():
         
        
         
-        self.getWcontinouswithSplitData(self.all_split_datas_continuous)
+        #self.getWcontinouswithSplitData(self.all_split_datas_continuous)
         
         self.test_W_continuous()       
+  
+
         """
+        *****************************************************************************************************************************************
+        discrete data trained by som 
+
+        #self.getuniquevalueindiscretedata(self.data_train_discrete_unnormalized)
+
+        self.getAllfeatureGroups()
+
+  
+
+        self.som_discrete_original.fit(self.data_train_discrete_unnormalized)
+        weight_discrete_original = self.som_discrete_original.weights0
+        print(f"self.som_discrete_original.weights0 {self.som_discrete_original.weights0}")
+        self.train_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_train_discrete_unnormalized,weight_discrete_original)   
+      
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_unnormalized)   
+        #print(f" self.predicted_clusters_indexes { predicted_clusters_indexes}")
+        self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
+
+        
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+        # the value in predicted_clusters are true label value    
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        self.getScore("train_discrete_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
+        """
+        #*** when validate needs to use current mapping(the real situation mappping) rather than the training sessino mapping
+
+        
+   
+    def do_COSOM(self, som, train_continuous_data, train_discrete_data,test_continuous_data,test_discrete_data, getscore= False, type = 0 ):
+        """
+        do continuous Optimized SOM to continous data set
+        
+        """
+        # continuous
+        if type == 0:
+            som.fit(train_continuous_data)
+            train_continuous_W0_predicted_label = som.predict(train_continuous_data,som.weights0)   
+            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(som.weights0.shape[0], train_continuous_W0_predicted_label,train_continuous_data)   
+            
+            #print(f"predicted_clusters_indexes {predicted_clusters_indexes}")
+            if getscore == True:
+                self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all),0)  
+                transferred_predicted_label_train_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,train_continuous_W0_predicted_label)    
+                self.getScore("train_continuous_score_W0",self.train_label_all,transferred_predicted_label_train_continuous_W0)
+                
+                self.test_continuous_W0_predicted_label = som.predict(test_continuous_data,som.weights0)     
+                transferred_predicted_label_test_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.test_continuous_W0_predicted_label)    
+                #print(f" {len(self.test_label_all)}   {len(transferred_predicted_label_test_continuous_W0)}")
+                self.getScore("test_continuous_score_W0",self.test_label_all,transferred_predicted_label_test_continuous_W0)
+
+
+        if type == 1: #train_continuous_score_W0 is the result without nomraization and directly use som
+            som.fit(train_discrete_data)
+            train_continuous_W0_predicted_label = som.predict(train_discrete_data,som.weights0)   
+            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(som.weights0.shape[0], train_continuous_W0_predicted_label,train_discrete_data)   
+            
+            #print(f"predicted_clusters_indexes {predicted_clusters_indexes}")
+            if getscore == True:
+                self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all),0)  
+                transferred_predicted_label_train_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,train_continuous_W0_predicted_label)    
+                self.getScore("train_continuous_score_W0",self.train_label_all,transferred_predicted_label_train_continuous_W0)
+                
+                self.test_continuous_W0_predicted_label = som.predict(test_discrete_data,som.weights0)     
+                transferred_predicted_label_test_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.test_continuous_W0_predicted_label)    
+                self.getScore("test_continuous_score_W0",self.test_label_all,transferred_predicted_label_test_continuous_W0)
+        # the new cluster data generated by finding community nodes
+        
+        #redo trainning with normalization data
+            som.fit(train_continuous_data)
+            train_continuous_W0_predicted_label = som.predict(train_continuous_data,som.weights0)   
+            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(som.weights0.shape[0], train_continuous_W0_predicted_label,train_continuous_data)   
+        
+        newclustered_datas = []
+        newclustered_datas_index = []
+
+
+        searched_datas = copy.deepcopy(current_clustered_datas)
+       
+        #searched_datas = array(searched_datas).tolist()
+
+        for i in range(0,len(searched_datas)):
+            # get discasending fartheset node in current clustered_data
+            sorted_index_distance_dict = self.split_continuous_data(train_continuous_data,predicted_clusters_indexes[i],  som.weights0[i])   
+            while len(sorted_index_distance_dict) >0:          
+                farthest_intra_node_index = self.getfarthest_intra_node_index(sorted_index_distance_dict)
+                #print(f"farthest_intra_node_index  {farthest_intra_node_index}")
+                current_check_node = train_continuous_data[farthest_intra_node_index]
+                del sorted_index_distance_dict[farthest_intra_node_index]
+                #*** check if current_check_node is in other community
+                already_in_community = False
+   
+                for k in range(0,len(newclustered_datas)):
+                  # print(f"k {k} newclustered_datas[k] {newclustered_datas[k]} ")
+                    current_check_node_vector = current_check_node.tolist()
+                   # print(f"type current_check_node_vector {type(current_check_node_vector)}  type newclustered_datas[k] {type(newclustered_datas[k])}")
+   
+                    if any(list.tolist() == current_check_node_vector for list in newclustered_datas[k]):
+                   #if  current_check_node in newclustered_datas[k]:
+                     already_in_community = True          
+                     break
+                
+                if already_in_community :
+                    continue
+
+
+                newclustered_data =[]
+                new_predicted_clusters =[]
+                # get inter community nodes
+                for j in range(0,len(searched_datas)):
+                    if j != i:
+                        sorted_dict_inter, distances_inter =  self.get_allnode_distance_to_center(train_continuous_data,current_check_node,predicted_clusters_indexes[j],som.weights0[j])
+                        new_inter_community_nodes,new_inter_community_nodes_keys = self.get_inter_continuous_community_nodes(train_continuous_data,sorted_dict_inter,distances_inter)
+                      #  print(f"new_inter_community_nodes_keys {new_inter_community_nodes_keys}")
+                        if new_inter_community_nodes != []:
+                            for item in new_inter_community_nodes:
+                                #print(f" add time in newclustered_data {x}")
+                                newclustered_data.append(item)
+                      
+                        if new_inter_community_nodes_keys != []:
+                            for item in new_inter_community_nodes_keys:
+                                #print("put item in inter community {}".format(item))
+                                predicted_clusters_indexes[j].remove(item)
+                                new_predicted_clusters.append(item)
+                               
+                            # udpate predicted_clusters_indexes[j]
+                            if predicted_clusters_indexes[j] != []: 
+                               current_clustered_datas[j] = train_continuous_data[predicted_clusters_indexes[j]].tolist()
+                            else:
+                                current_clustered_datas[j] =[]
+ 
+                sorted_dict_intra, distances_intra =  self.get_allnode_distance_to_center(train_continuous_data,current_check_node,predicted_clusters_indexes[i],som.weights0[i])
+   
+                #print(" sorted_dict_intra {}".format( sorted_dict_intra))
+
+                new_intra_community_nodes,new_intra_community_nodes_keys = self.get_intra_continuous_community_nodes(train_continuous_data,sorted_dict_intra,som.weights0[i])
+                #add self to the community
+                #print(f"new_intra_community_nodes_keys {new_intra_community_nodes_keys}")
+                if new_intra_community_nodes!=[]:
+                    for item1 in new_intra_community_nodes:
+                        newclustered_data.append(item1)    
+               
+                if new_intra_community_nodes_keys!=[]:
+                    #print(" b1 {}".format( b1))
+                    for item in new_intra_community_nodes_keys:
+                        #print("put item  in intra community {}".format(item))
+                        predicted_clusters_indexes[i].remove(item)
+                     
+                        new_predicted_clusters.append(item)
+                  
+                    #change to np.array
+                    current_clustered_datas[i] = np.array(current_clustered_datas[i])      
+                    #update  predicted_clusters_indexes[i] 
+                    if predicted_clusters_indexes[i] != [] :
+                        current_clustered_datas[i] = train_continuous_data[predicted_clusters_indexes[i]].tolist()
+                    else:
+                        current_clustered_datas[i] =[]                      
+                 # add current data to the community generated
+                if new_inter_community_nodes!=[] or new_intra_community_nodes!=[]:
+                     newclustered_data.append(current_check_node)
+                     new_predicted_clusters.append(farthest_intra_node_index)
+
+                    
+                     #*** remove current_check_node
+                     #print("put farthest_intra_node_index  in the community {}".format(farthest_intra_node_index))
+                     predicted_clusters_indexes[i].remove(farthest_intra_node_index)
+                     current_clustered_datas[i] = train_continuous_data[predicted_clusters_indexes[i]].tolist()
+
+            
+
+                if newclustered_data != []:
+                    #print(f"newclustered_datas ``````  {newclustered_datas}")
+                    newclustered_datas.append(newclustered_data)
+                   # print(f"newclustered_data  {newclustered_data}")
+                    newclustered_datas_index.append(new_predicted_clusters)
+
+        #**** when item is [] do not remove as in the original W there will be also [] once is removed will cause problem  len( self.all_split_datas_continuous) is different or smaller then W0
+        all_split_datas_continuous =[]
+
+        for item in current_clustered_datas:
+            all_split_datas_continuous.append(item)
+              #  print("len i {}".format(item))
+
+        for item in newclustered_datas:
+            all_split_datas_continuous.append(item)
+             #   print("len j {}".format(item))  
+        all_split_datas_indexes_continuous =[]
+        for item in predicted_clusters_indexes:
+            all_split_datas_indexes_continuous.append(item)
+        
+        for item in newclustered_datas_index:
+            all_split_datas_indexes_continuous.append(item)
+        
+        #self.getWcontinouswithSplitData(all_split_datas_continuous)
+        
+        self.test_W_continuous(train_continuous_data,test_continuous_data,all_split_datas_continuous)      
+        
+        
+     
+
+    def do_DOSOM(self):
+        """
+        do discrete optimized SOM 
+        
+        """
+    
 
         """
         *****************************************************************************************************************************************
@@ -933,11 +1212,16 @@ class CDSOM():
 
         self.som_discrete_original.fit(self.data_train_discrete_normalized)
         weight_discrete_original = self.som_discrete_original.weights0
+        #print(f"self.som_discrete_original.weights0 {self.som_discrete_original.weights0}")
         self.train_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_train_discrete_normalized,weight_discrete_original)   
+      
         predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_normalized)   
-        
-       # self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
+        #print(f" self.predicted_clusters_indexes { predicted_clusters_indexes}")
+        self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
 
+        
+
+        self.do_COSOM(current_clustered_datas)
         
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
         # the value in predicted_clusters are true label value    
@@ -951,7 +1235,11 @@ class CDSOM():
         transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)   
         self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
 
-        predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_train_discrete_unnormalized)  # predicted_clusters_indexes = [1,1,2,3,1,1,2,1]
+        predicted_clusters_indexes = self.trainNewSomWithFeatureProbabilityData(self.data_train_discrete_unnormalized)
+
+      
+
+      #  predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_train_discrete_unnormalized)  # predicted_clusters_indexes = [1,1,2,3,1,1,2,1]
         print(f"predicted_clusters_indexes {predicted_clusters_indexes}")
         predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_discrete_original.shape[0], predicted_clusters_indexes,self.data_train_discrete_unnormalized) 
       
@@ -962,7 +1250,8 @@ class CDSOM():
 
 
 
-        predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_test_discrete_unnormalized)
+      #  predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_test_discrete_unnormalized)
+        predicted_clusters_indexes = self.predcitTestDatwithSOMProbability(self.data_test_discrete_unnormalized,weight_discrete_original.shape[0])
         predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_discrete_original.shape[0], predicted_clusters_indexes,self.data_test_discrete_unnormalized) 
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
         transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue(predicted_clusters_indexes,self.PLabel_to_Tlabel_Mapping_W_Discrete) 

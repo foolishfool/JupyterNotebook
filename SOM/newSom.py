@@ -132,7 +132,7 @@ class SOM():
         distance = np.linalg.norm((x_stack - newWeights).astype(float), axis=1)
         # Find index of best matching unit
         return np.argmin(distance)
-
+    
 
     def _find_bmu_hamming(self,x, newWeights):
         hamming_distances =[]
@@ -209,6 +209,8 @@ class SOM():
        # print("weights:{}".format(self.weights))
         # Update weights
         self.weights += delta
+       # self.weights = np.round(self.weights,3)
+       # print(self.weights)
 
 
     def step_hamming(self,x):
@@ -525,6 +527,8 @@ class SOM():
         return
     
 
+
+    
     def predict(self,X, newWeights):
         """
         train_data_clusters = [[1,2,6]]
@@ -542,6 +546,7 @@ class SOM():
         assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
      
         labels = np.array([self._find_bmu(x,newWeights) for x in X])
+        #print(f" labels {labels}")
         return labels
     
 
