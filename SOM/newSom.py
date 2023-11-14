@@ -5,21 +5,18 @@ similar to clustering method in sklearn.
 Created: 1-27-21
 from readline import append_history_file
 """
-from ast import If
-import copy
-import math
 
+import copy
 import numpy as np
-from mayavi import mlab
-from scipy import spatial
 from sklearn import preprocessing
 from scipy.spatial import distance
+
 class SOM():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
     """
     def __init__(self, m=3, n=3, dim=3, lr=1, sigma=1, max_iter=3000,
-                    random_state=None):
+                    ):
         """
         Parameters
         ----------
@@ -46,7 +43,6 @@ class SOM():
         """
         # Initialize descriptive features of SOM
  
-        self.currentWIndex = 0
         self.m =m
         self.n =n
         self.dim =dim
@@ -54,17 +50,16 @@ class SOM():
         self.initial_lr = lr
         self.sigma =sigma
         self.max_iter = max_iter
-        self.random_max_iter  = 100
 
         self.trained = False
         self.shape = (m, n)
     
         # Initialize weights
-        self.random_state = random_state
-        rng = np.random.default_rng(random_state)
+        self.random_state = None
+        rng = np.random.default_rng(None)
 
         self.weights= rng.normal(size=(m * n, dim))
-        #print("initila self.weigts {} dim {}".format(m*n,dim))
+       # print("initila self.weigts {} ".format(self.weights))
         self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
         self.weights_onehot = rng.normal(size=(m * n, dim))
@@ -103,7 +98,7 @@ class SOM():
         self._trained = False
 
 
-
+    
     def _get_locations(self, m, n):
         """
         Return the indices of an m by n array.
@@ -114,7 +109,7 @@ class SOM():
         #print("np.ones(shape=(m, n){}".format(np.ones(shape=(m, n))))
         #print("_get_locations( m, n){}".format(np.argwhere(np.ones(shape=(m, n))).astype(np.int64)))
         return np.argwhere(np.ones(shape=(m, n))).astype(np.int64)
-
+    
     def _find_bmu(self,x, newWeights,showlog = False):
         """
         Find the index of the best matching unit for the input vector x.
@@ -133,7 +128,7 @@ class SOM():
         # Find index of best matching unit
         return np.argmin(distance)
     
-
+    
     def _find_bmu_hamming(self,x, newWeights):
         hamming_distances =[]
         for i in range(0,newWeights.shape[0] ):
@@ -163,12 +158,12 @@ class SOM():
         print("mindex {}".format( hamming_distances.index(mindex)))
         return hamming_distances.index(mindex)
     
-
+    
     def step(self,x, showlog):
         """
         Do one step of training on the given input vector.
         """
-        #print(x)
+        #print(f"x {x}")
         # Stack x to have one row per weight 
         x_stack = np.stack([x]*(self.m*self.n), axis=0)
         #print("x_stack {}".format(x_stack))
@@ -204,13 +199,15 @@ class SOM():
         local_multiplier = np.stack([local_step]*(self.dim), axis=1)
         #print("local_multiplier:{}".format(local_multiplier))
         # Multiply by difference between input and weights
-        delta = local_multiplier * (x_stack - self.weights).astype(float)
         #print("delta:{}".format(delta))
-       # print("weights:{}".format(self.weights))
+        delta = local_multiplier * (x_stack - self.weights).astype(float)
+       
+        #print("delta:{}".format(delta))
+        #print("weights:{}".format(self.weights))
         # Update weights
         self.weights += delta
        # self.weights = np.round(self.weights,3)
-       # print(self.weights)
+        #print(f"self.weights at last {self.weights}")
 
 
     def step_hamming(self,x):
@@ -293,6 +290,7 @@ class SOM():
        # print("weights:{}".format(self.weights))
         # Update weights
         self.weights += delta  
+    
     def _compute_point_intertia(self, x):
         """
         Compute the inertia of a single point. Inertia defined as squared distance
@@ -306,7 +304,7 @@ class SOM():
         # Compute sum of squared distance (just euclidean distance) from x to bmu
         return np.sum(np.square(x - bmu))
 
-
+    
     def fit( self, X, weightIndex = 0,epochs=1, shuffle=True, showlog = False):
         """
         Take data (a tensor of type float64) as input and fit the SOM to that
@@ -326,7 +324,7 @@ class SOM():
         None
             Fits the SOM to the given data but does not return anything.
         """
-
+        #@print(111111)
         #print("X {}".format(X))
         # Count total number of iterations
         global_iter_counter = 0
@@ -359,6 +357,7 @@ class SOM():
                 #print(X[idx] )
                 
                 input = X[idx]
+
                 #if (type(input) is np.float64):
                 #    input = [input]
                 # Do one step of training
@@ -380,7 +379,7 @@ class SOM():
         self.trained = True
         if(weightIndex == 0):
             self.weights0 = copy.deepcopy(self.weights)
-
+            #print(f"self.weights0 = {self.weights0}")
         if(weightIndex == 1):
             self.weights1 = copy.deepcopy(self.weights)
 
@@ -549,7 +548,7 @@ class SOM():
         #print(f" labels {labels}")
         return labels
     
-
+    
     def predict_with_probaility(self,X, newWeights,train_data_clusters):
         """
         train_data_clusters = [[1,2,6].[4,61],[34.56]]
@@ -598,7 +597,7 @@ class SOM():
      
         labels = np.array([self._find_bmu_hamming(x,newWeights) for x in X])
         return labels      
-
+    
     def transform(self, X):
         """
         Transform the data X into cluster distance space.

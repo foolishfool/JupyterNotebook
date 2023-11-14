@@ -5,12 +5,13 @@ find intra communiyt in each neuron memberships and do the whole mapping and ret
 """
 
 #from curses.ascii import NULL
-
+from scipy.special import softmax
 from asyncio.windows_events import NULL
 from sklearn import metrics
 from scipy import spatial
 import numpy as np
 import math
+import sys
 import operator
 import copy
 from numpy import array
@@ -38,14 +39,15 @@ class CDSOM():
                  data_train_continuous,
                  data_train_discrete,
                  data_train_discrete_normalized,
-                 data_train_discrete_onehotcode,
+                 data_train_discrete_encoded,
                  data_test_all,
                  data_test_continuous,
                  data_test_discrete,
                  data_test_discrete_normalized,
-                 data_test_discrete_onehotcode,
+                 data_test_discrete_encoded,
                  label_train_all,                       
-                 label_test_all):
+                 label_test_all,
+                 ):
         """
         Parameters
         ----------
@@ -58,12 +60,12 @@ class CDSOM():
         class_num: external validation class number
      
         """
-       
+
         self.som = som  
         self.som_continuous = som_continuous 
         self.soms_discrete = soms_discrete  
         self.som_total_discrete_transferred = som_total_discrete_transferred  
-        self.som_discrete_original = som_discrete_original  
+        self.som_discrete_original_encoder = som_discrete_original  
         # initial cluster numbers in TDSM_SOM, which is the neuron number in som
         self.predicted_classNum= int(som.m*som.n)
         self.community_distance = 1
@@ -80,8 +82,8 @@ class CDSOM():
         self.data_test_discrete_unnormalized = data_test_discrete   
         self.data_test_discrete_normalized = data_test_discrete_normalized
 
-        self.data_train_discrete_onehotencoded = data_train_discrete_onehotcode
-        self.data_test_discrete_onehotencoded = data_test_discrete_onehotcode
+        self.data_train_discrete_encoded = data_train_discrete_encoded
+        self.data_test_discrete_encoded = data_test_discrete_encoded
 
         self.train_label_all = label_train_all
         self.train_label_all = self.train_label_all.astype(int)
@@ -94,7 +96,65 @@ class CDSOM():
         # continuous features generated datas indexes   
         self.all_split_datas_indexes_continuous = []
 
-        self.outliner_clusters = []
+        self.outliner_clusters = [] 
+
+    def shannon_entropy(self,A, mode="auto", verbose=False):
+        """
+        https://stackoverflow.com/questions/42683287/python-numpy-shannon-entropy-array
+        """
+        A = np.asarray(A)
+
+        # Determine distribution type
+        if mode == "auto":
+            condition = np.all(A.astype(float) == A.astype(int))
+            #print(condition)
+            if condition:
+                mode = "discrete"
+            else:
+                mode = "continuous"
+        if verbose:
+            print(mode, file=sys.stderr)
+        # Compute shannon entropy
+        pA = A / A.sum()
+        #print(f"A.sum() {A.sum()}")
+        # Remove zeros
+        pA = pA[np.nonzero(pA)[0]]
+        if mode == "continuous":
+            return -np.sum(pA*np.log2(A))  
+        if mode == "discrete":
+            return -np.sum(pA*np.log2(pA))   
+
+    def mutual_information(self,x,y, mode="auto", normalized=False):
+        """
+        I(X, Y) = H(X) + H(Y) - H(X,Y)
+        https://stackoverflow.com/questions/20491028/optimal-way-to-compute-pairwise-mutual-information-using-numpy
+        """
+        x = np.asarray(x)
+        y = np.asarray(y)
+        # Determine distribution type
+        #print(mode)
+        if mode == "auto":
+            condition_1 = np.all(x.astype(float) == x.astype(int))
+            condition_2 = np.all(y.astype(float) == y.astype(int))
+            #print(condition_1)
+            #print(condition_2)
+            if all([condition_1, condition_2]):
+                mode = "discrete"
+            else:
+                mode = "continuous"
+
+        H_x = self.shannon_entropy(x, mode=mode)
+        print(H_x)
+        H_y = self.shannon_entropy(y, mode=mode)
+        print(H_y)
+        H_xy = self.shannon_entropy(np.concatenate([x,y]), mode=mode)
+
+        # Mutual Information
+        I_xy = H_x + H_y - H_xy
+        if normalized:
+            return I_xy/np.sqrt(H_x*H_y)
+        else:
+            return  I_xy  
 
     def purity_score(self,scorename, y_true, y_pred):
         # compute contingency matrix (also called confusion matrix)
@@ -102,14 +162,16 @@ class CDSOM():
         #print(" purity_score y_true{}  y_pred {} ".format(y_true,y_pred))
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
-        if(scorename == "all_train_score_W_Combine" ):
-            self.all_train_score_W_Combine_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            print("all_train_score_W0_p {}".format(self.all_train_score_W0_p ))  
+        if(scorename == "all_train_score_W_combine" ):
+            self.all_train_score_W_combine_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+            print("all_train_score_W_combine_p {}".format(self.all_train_score_W_combine_p ))  
         if(scorename == "test_score_W0" ):
             self.test_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
-          #  print("test_score_W0_p{}".format(self.test_score_W0_p ))
-        if(scorename == "test_score_W_Combine" ):
-            self.test_score_W_Combine_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix) 
-
+            print("test_score_W0_p{}".format(self.test_score_W0_p ))
+        if(scorename == "test_score_W_combine" ):
+            self.test_score_W_combine_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix) 
+            print("test_score_W_combine_p{}".format(self.test_score_W_combine_p ))
         if(scorename == "test_discrete_score_W_discrete" ):
             self.test_discrete_score_W_discrete_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
             print("test_discrete_score_W_discrete_p {}".format(self.test_discrete_score_W_discrete_p ))  
@@ -130,10 +192,8 @@ class CDSOM():
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
             print("all_train_score_W0_n {}".format(self.all_train_score_W0_n ))  
-        if(scorename == "all_train_score_W_Combine" ):          
-            self.all_train_score_W_combine_n = normalized_mutual_info_score(y_true,y_pred)
-            # if  self.all_train_score_W_Combined_n >= self.all_train_score_W0_n :
-            #     print("all_train_score_W_Combined increased in nmi")
+        if(scorename == "all_train_score_W_combine" ):          
+            self.all_train_score_W_combine_n = normalized_mutual_info_score(y_true,y_pred) 
             print("all_train_score_W_combine_n {}".format(self.all_train_score_W_combine_n ))  
         if(scorename == "test_score_W0" ):
             self.test_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
@@ -155,6 +215,7 @@ class CDSOM():
 
         if(scorename == "train_discrete_score_W0" ):
             self.train_discrete_score_W0_n = normalized_mutual_info_score(y_true,y_pred)
+
             print("train_discrete_score_W0_n {}".format(self.train_discrete_score_W0_n ))  
 
         if(scorename == "test_discrete_score_W0" ):
@@ -179,7 +240,7 @@ class CDSOM():
             print("train_discrete_score_W_discrete_n {}".format(self.train_discrete_score_W_discrete_n ))  
     
     def ariScore(self,scorename, y_true, y_pred):
-      #  print(" nmi y_true{} unique{} y_pred {} unique {} ".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
+       # print(" nmi y_true{} unique{} y_pred {} unique {} ".format(y_true,np.unique(y_true),y_pred,np.unique(y_pred)))
         if(scorename == "all_train_score_W0" ):
             self.all_train_score_W0_a = adjusted_rand_score(y_true,y_pred)
             print("all_train_score_W0_a {}".format(self.all_train_score_W0_a ))  
@@ -192,9 +253,9 @@ class CDSOM():
         if(scorename == "test_score_W0" ):
             self.test_score_W0_a = adjusted_rand_score(y_true,y_pred)
             print("test_score_W0_a  {}".format(self.test_score_W0_a ))  
-        if(scorename == "test_score_W_Combine" ):
+        if(scorename == "test_score_W_combine" ):
             self.test_score_W_combine_a = adjusted_rand_score(y_true,y_pred)
-            print("test_score_W_Combine_a {}".format(self.test_score_W_combine_a ))  
+            print("test_score_W_combine_a {}".format(self.test_score_W_combine_a ))  
 
         if(scorename == "train_continuous_score_W0" ):
             self.train_continuous_score_W0_a = adjusted_rand_score(y_true,y_pred)
@@ -214,7 +275,7 @@ class CDSOM():
         
         if(scorename == "test_discrete_score_W0" ):
             self.test_discrete_score_W0_a = adjusted_rand_score(y_true,y_pred)
-            print("test_discrete_score_W0 {}".format(self.test_discrete_score_W0_a ))  
+            print("test_discrete_score_W0_a {}".format(self.test_discrete_score_W0_a ))  
 
         if(scorename == "test_continuous_score_W_continuous" ):
             self.test_continuous_score_W_continuous_a = adjusted_rand_score(y_true,y_pred)
@@ -264,7 +325,7 @@ class CDSOM():
         for j in range(0, len(clusters_indexes)):
             for item in clusters_indexes[j]:
                 mapped_class_in_clusters[j].append(real_class_label[item])
-
+        #print(f"mapped_class_in_clusters {mapped_class_in_clusters}")
         # mapped_clases_in_clusters = [[1,2,1,2,1,1],[2,2,2,2],[0,1,0]]
        # for x in mapped_class_in_clusters:
        #    # print(f"x : {x}")
@@ -284,9 +345,11 @@ class CDSOM():
         predicted_label_convert_to_class_label = []
        
         for item in predicted_class_label_in_each_cluster:
+            #print(f"item{item}" )   
             if item != []:
                 # the first item is for cluster0       
-                # transfer to true class value based on indices in predict lables          
+                # transfer to true class value based on indices in predict lables       
+                
                 predicted_label_convert_to_class_label.append(self.getMaxRepeatedElements(item))
             else:
                 # -1 means there is no data in current neuron
@@ -516,7 +579,8 @@ class CDSOM():
 
 
     def getScore(self,scorename, y_true, y_pred):
-        #print(scorename)
+       # print(len(y_true))
+       # print(len(y_pred))
         self.purity_score(scorename,y_true,y_pred)
         self.nmiScore(scorename,y_true,y_pred)
         self.ariScore(scorename,y_true,y_pred)
@@ -774,7 +838,7 @@ class CDSOM():
         return labels
     
     def trainNewSomWithFeatureProbabilityData(self,X):
-        dim= self.som_discrete_original.weights0.shape[0]
+        dim= self.som_discrete_original_encoder.weights0.shape[0]
         m, n = self.topology_som(dim)
         self.som_probability = newSom.SOM(m=m, n= n, dim=dim) 
        # print(f" X {X}")
@@ -791,7 +855,7 @@ class CDSOM():
     
     def getOneSingleFeatureNeuronProbability(self, one_feature_dic, neuron_predicted_groups):
         onesinglefeatureneuronprobablity = {}
-        #print(f"one_feature_dic.keys() {one_feature_dic.keys()} ")
+        #print(f"one_feature_dic {one_feature_dic} ")
         for key in one_feature_dic.keys():
             probability_list = []
             for i in range(0,len(neuron_predicted_groups)) :  
@@ -802,21 +866,76 @@ class CDSOM():
             #print(f"key {key} probability_list{probability_list}")
             probability_list = np.array(probability_list)
             onesinglefeatureneuronprobablity[key] = probability_list
-           # print(f"key {key} onesinglefeatureneuronprobablity.argmax) {onesinglefeatureneuronprobablity[key].argmax()} ")
+            #print(f"key {key} probability_list) {probability_list} ")
         return onesinglefeatureneuronprobablity
 
+    def getOneSingleFeatureNeuronProbability_subjective(self, one_feature_dic, neuron_predicted_groups):
+        onesinglefeatureneuronprobablity = {}
+        sum=0
+        for key in one_feature_dic.keys():
+            sum+= len(one_feature_dic[key])
 
-
+        #print(f"one_feature_dic.keys() {one_feature_dic.keys()} ")
+        for key in one_feature_dic.keys():
+            probability_list = []
+            for i in range(0,len(neuron_predicted_groups)) :  
+                #print("New neuron _predicted group !!!")       
+                probability =  len(one_feature_dic[key])/sum
+                #print(f"i {i} neuron_predicted_groups[i] {len(neuron_predicted_groups[i])}")  
+                probability_list.append(probability)
+            #print(f"key {key} probability_list{probability_list}")
+            probability_list = np.array(probability_list)
+            onesinglefeatureneuronprobablity[key] = probability_list
+           # print(f"key {key} probability_list) {probability_list} ")
+        return onesinglefeatureneuronprobablity
+    
+    def getOneSingleFeatureNeuronProbability_softmax(self, one_feature_dic, neuron_predicted_groups):
+        onesinglefeatureneuronprobablity = {}
+        number_list= []
+        for key in one_feature_dic.keys():
+            number_list.append(len(one_feature_dic[key]))
+        softmax_result = softmax(number_list)
+        i = 0
+        #print(f"number_list { number_list} softmax_result{softmax_result} ")
+        for key in one_feature_dic.keys():
+            probability_list = []
+            for j in range(0,len(neuron_predicted_groups)) :  
+                #print("New neuron _predicted group !!!")       
+                probability_list.append(softmax_result[i])
+            #print(f"key {key} probability_list{probability_list}")
+            probability_list = np.array(probability_list)
+            onesinglefeatureneuronprobablity[key] = probability_list
+            i+=1
+            #print(f"key {key} probability_list) {probability_list} ")
+        return onesinglefeatureneuronprobablity
     def getEachNeuronProbabilityOfEachFeatureValue(self,neuron_predicted_groups):
         self.all_features_mapping ={}
         for i in range(0, len(self.all_feature_groups)):
            # print(f"  feature  {i}!!!!!!!!!!!")
             self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability(self.all_feature_groups[i],neuron_predicted_groups)
+           # self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability_subjective(self.all_feature_groups[i],neuron_predicted_groups)
+            #print(f"  self.all_features_mapping[i]  {self.all_features_mapping[i]}!!!!!!!!!!!")
+
+    def getEachNeuronProbabilityOfEachFeatureValue_subjective(self,neuron_predicted_groups):
+        self.all_features_mapping ={}
+        for i in range(0, len(self.all_feature_groups)):
+           # print(f"  feature  {i}!!!!!!!!!!!")
+            #self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability(self.all_feature_groups[i],neuron_predicted_groups)
+            self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability_subjective(self.all_feature_groups[i],neuron_predicted_groups)
+            #print(f"  self.all_features_mapping[i]  {self.all_features_mapping[i]}!!!!!!!!!!!")
+
+   
+    def getEachNeuronProbabilityOfEachFeatureValue_softmax(self,neuron_predicted_groups):
+        self.all_features_mapping ={}
+        for i in range(0, len(self.all_feature_groups)):
+           # print(f"  feature  {i}!!!!!!!!!!!")
+            #self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability(self.all_feature_groups[i],neuron_predicted_groups)
+            self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability_softmax(self.all_feature_groups[i],neuron_predicted_groups)
             #print(f"  self.all_features_mapping[i]  {self.all_features_mapping[i]}!!!!!!!!!!!")
     
     def getEmbeddingWithNeuronProbablity(self,X):
         newX =[]
-      #  print(f"X shape {X.shape}")
+        
         for x in X:
             newdata =[]
             for j in range(0, len(x)):
@@ -826,13 +945,16 @@ class CDSOM():
                     for value in self.all_features_mapping[j][x[j]]:
                         newdata.append(value) 
                 else:
-                    fakekey = self.all_features_mapping[j].keys()[0]
+                   # print(f"j{j} x[j]   {x[j] }  self.all_features_mapping[j].keys() {self.all_features_mapping[j].keys()}")
+                    fakekey = list(self.all_features_mapping[j])[0]
                     #**** it is not correct, just for a certain dataset, which has lots of data but certain features have very small propration, so when resample the traiing data, that feature is not incluced, but in the test data it has such feature value 
                     for value in self.all_features_mapping[j][fakekey]:
                         newdata.append(value) 
-        #print(f"newX {newX} newdata {newdata}")      
+           # print(f"the original discrete data : {x} ")
+            #print(f"the proposed encoded data representation: {newdata} ")
             newX.append(newdata)
-       # print(f"newX {newX}")
+       # print(f"new embedding {newX}")
+        #print(f"the original discrete data : {X} and proposed encoded data representation: {newX} ")
         return np.array(newX)
         
 
@@ -852,213 +974,7 @@ class CDSOM():
 
 
         
-    def run(self):
-        """
-        score_type 0 purity 1 numi 2 rai
-        
-        """
-        # true distributon
-        """
-        self.cluster_data_based_true_label()
-        print("True Distribution : ")
-        for i in range(0,len(self.all_true_clustered_datas_indexes)) :
-            self.drawnormaldistributonplot(self.all_true_clustered_datas_indexes[i],i,"green")
-        """
-
-        """
-        *****************************************************************************************************************************************
-        All data trained by som 
-        """
-        """
-        self.som.fit(self.data_train_all)
-        weight_continuous = self.som.weights0
-        self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_continuous)   
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.m*self.som.n, self.train_W0_predicted_label,self.data_train_all)   
-  
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes) ,0)  
-        # the value in predicted_clusters are true label value    
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
-        self.getScore("all_train_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
-
-        self.test_W0_predicted_label = self.som.predict(self.data_test_all,weight_continuous)   
-        transferred_predicted_label_test_W0 = self.transferClusterLabelToClassLabel(weight_continuous.shape[0],self.test_W0_predicted_label,self.data_test_all)    
-        self.getScore("test_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
-        """
-
-        """
-        *****************************************************************************************************************************************
-        continuous data trained by som 
-        """
-
-    
-        # continuous
-       #!!!! self.som_continuous.fit(self.data_train_continuous) 
-        self.som_continuous.fit(self.data_train_discrete_normalized) 
-        
-        #print(f"weight_continuous 0 {weight_continuous }" )
-        #!!!! self.train_continuous_W0_predicted_label = self.som_continuous.predict(self.data_train_continuous,self.som_continuous.weights0)   
-        self.train_continuous_W0_predicted_label = self.som_continuous.predict(self.data_train_discrete_normalized,self.som_continuous.weights0)   
-       # print(f"train_continuous_W0_predicted_label  {self.train_continuous_W0_predicted_label } ")
-        #!!!! predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_continuous.weights0.shape[0], self.train_continuous_W0_predicted_label,self.data_train_continuous)   
-      
-        
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_continuous.weights0.shape[0], self.train_continuous_W0_predicted_label,self.data_train_discrete_normalized)   
-        #predicted_clusters  [[23,31,21,2],[1,3,5,76],[45,5,12]] index in data_train in some situation, it will have []
-
-
-        # the value in predicted_clusters are true label value  
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all),0)  
-        transferred_predicted_label_train_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.train_continuous_W0_predicted_label)    
-        self.getScore("train_continuous_score_W0",self.train_label_all,transferred_predicted_label_train_continuous_W0)
-
-       #!!!! self.test_continuous_W0_predicted_label = self.som_continuous.predict(self.data_test_continuous,self.som_continuous.weights0)  
-        self.test_continuous_W0_predicted_label = self.som_continuous.predict(self.data_test_continuous,self.som_continuous.weights0)  
-        
-        transferred_predicted_label_test_continuous_W0 = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Original,self.test_continuous_W0_predicted_label)    
-        self.getScore("test_continuous_score_W0",self.test_label_all,transferred_predicted_label_test_continuous_W0)
-
-
-        # the new cluster data generated by finding community nodes
-        newclustered_datas = []
-        newclustered_datas_index = []
-
-
-        searched_datas = copy.deepcopy(current_clustered_datas)
-        searched_datas = array(searched_datas).tolist()
-
-        for i in range(0,len(searched_datas)):
-            # get discasending fartheset node in current clustered_data
-            sorted_index_distance_dict = self.split_continuous_data(predicted_clusters_indexes[i],  self.som_continuous.weights0[i])   
-            while len(sorted_index_distance_dict) >0:          
-                farthest_intra_node_index = self.getfarthest_intra_node_index(sorted_index_distance_dict)
-                current_check_node = self.data_train_continuous[farthest_intra_node_index]
-                del sorted_index_distance_dict[farthest_intra_node_index]
-                #*** check if current_check_node is in other community
-                already_in_community = False
-   
-                for k in range(0,len(newclustered_datas)):
-                    if  current_check_node in np.array(newclustered_datas[k]):
-                     already_in_community = True          
-                     break
-                
-                if already_in_community :
-                    continue
-
-
-                newclustered_data =[]
-                new_predicted_clusters =[]
-                # get inter community nodes
-                for j in range(0,len(searched_datas)):
-                    if j != i:
-                        sorted_dict_inter, distances_inter =  self.get_allnode_distance_to_center( data_train_continuous,current_check_node,predicted_clusters_indexes[j],self.som_continuous.weights0[j])
-                        new_inter_community_nodes,new_inter_community_nodes_keys = self.get_inter_continuous_community_nodes(sorted_dict_inter,distances_inter)
-                      #  print(f"new_inter_community_nodes_keys {new_inter_community_nodes_keys}")
-                        if new_inter_community_nodes != []:
-                            for item in new_inter_community_nodes:
-                                newclustered_data.append(item)
-                      
-                        if new_inter_community_nodes_keys != []:
-                            for item in new_inter_community_nodes_keys:
-                                predicted_clusters_indexes[j].remove(item)
-                                new_predicted_clusters.append(item)
-                                #print("put item 1 in community {}".format(item))
-                            # udpate predicted_clusters_indexes[j]
-                            if predicted_clusters_indexes[j] != []: 
-                               current_clustered_datas[j] = list(self.data_train_continuous[predicted_clusters_indexes[j]])
-                            else:
-                                current_clustered_datas[j] =[]
  
-                sorted_dict_intra, distances_intra =  self.get_allnode_distance_to_center(current_check_node,predicted_clusters_indexes[i],self.som_continuous.weights0[i])
-                #print(" i {}".format( i))
-
-                new_intra_community_nodes,new_intra_community_nodes_keys = self.get_intra_continuous_community_nodes(sorted_dict_intra,self.som_continuous.weights0[i])
-                #add self to the community
-                #print(f"new_intra_community_nodes_keys {new_intra_community_nodes_keys}")
-                if new_intra_community_nodes!=[]:
-                    for item1 in new_intra_community_nodes:
-                        newclustered_data.append(item1)    
-               
-                if new_intra_community_nodes_keys!=[]:
-                    #print(" b1 {}".format( b1))
-                    for item in new_intra_community_nodes_keys:
-                        predicted_clusters_indexes[i].remove(item)
-                        new_predicted_clusters.append(item)
-                  
-                    #change to np.array
-                    current_clustered_datas[i] = np.array(current_clustered_datas[i])      
-                    #update  predicted_clusters_indexes[i] 
-                    if predicted_clusters_indexes[i] != [] :
-                        current_clustered_datas[i] = list(self.data_train_continuous[predicted_clusters_indexes[i]] )
-                    else:
-                        current_clustered_datas[i] =[]                      
-                 # add current data to the community generated
-                if new_inter_community_nodes!=[] or new_intra_community_nodes!=[]:
-                     newclustered_data.append(current_check_node)
-                     new_predicted_clusters.append(farthest_intra_node_index)
-
-                    
-                     #*** remove current_check_node
-                     predicted_clusters_indexes[i].remove(farthest_intra_node_index)
-                     current_clustered_datas[i] = list(self.data_train_continuous[predicted_clusters_indexes[i]] )
-
-            
-
-                if newclustered_data != []:
-                    newclustered_datas.append(newclustered_data)
-                    newclustered_datas_index.append(new_predicted_clusters)
-
-        #**** when item is [] do not remove as in the original W there will be also [] once is removed will cause problem  len( self.all_split_datas_continuous) is different or smaller then W0
-      
-        for item in current_clustered_datas:
-            self.all_split_datas_continuous.append(item)
-              #  print("len i {}".format(item))
-
-        for item in newclustered_datas:
-            self.all_split_datas_continuous.append(item)
-             #   print("len j {}".format(item))  
-
-        for item in predicted_clusters_indexes:
-            self.all_split_datas_indexes_continuous.append(item)
-        
-        for item in newclustered_datas_index:
-            self.all_split_datas_indexes_continuous.append(item)
-        
-       
-        
-        #self.getWcontinouswithSplitData(self.all_split_datas_continuous)
-        
-        self.test_W_continuous()       
-  
-
-        """
-        *****************************************************************************************************************************************
-        discrete data trained by som 
-
-        #self.getuniquevalueindiscretedata(self.data_train_discrete_unnormalized)
-
-        self.getAllfeatureGroups()
-
-  
-
-        self.som_discrete_original.fit(self.data_train_discrete_unnormalized)
-        weight_discrete_original = self.som_discrete_original.weights0
-        print(f"self.som_discrete_original.weights0 {self.som_discrete_original.weights0}")
-        self.train_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_train_discrete_unnormalized,weight_discrete_original)   
-      
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_unnormalized)   
-        #print(f" self.predicted_clusters_indexes { predicted_clusters_indexes}")
-        self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
-
-        
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
-        # the value in predicted_clusters are true label value    
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
-        self.getScore("train_discrete_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
-        """
-        #*** when validate needs to use current mapping(the real situation mappping) rather than the training sessino mapping
-
-        
-   
     def do_COSOM(self, som, train_continuous_data, train_discrete_data,test_continuous_data,test_discrete_data, getscore= False, type = 0 ):
         """
         do continuous Optimized SOM to continous data set
@@ -1227,9 +1143,7 @@ class CDSOM():
         
         self.test_W_continuous(train_continuous_data,test_continuous_data,all_split_datas_continuous)      
         
-        
-     
-
+    
     def do_DOSOM(self):
         """
         do discrete optimized SOM 
@@ -1243,137 +1157,189 @@ class CDSOM():
         """
         #self.getuniquevalueindiscretedata(self.data_train_discrete_unnormalized)
 
-        self.getAllfeatureGroups()
+        self.getAllfeatureGroups()  #group each column by feature value
 
-  
-
-        self.som_discrete_original.fit(self.data_train_discrete_unnormalized)
-        weight_discrete_original = self.som_discrete_original.weights0
-        #print(f"self.som_discrete_original.weights0 {self.som_discrete_original.weights0}")
-        self.train_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_train_discrete_unnormalized,weight_discrete_original)   
-      
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_unnormalized)   
+        #print(f"self.data_train_discrete_encoded.shape {self.data_train_discrete_encoded.shape}")
+        self.som_discrete_original_encoder.fit(self.data_train_discrete_encoded)
+        weight_discrete_original = self.som_discrete_original_encoder.weights0
+        #print(f" weight_discrete_original{ weight_discrete_original} ")
+      #  print(f" self.data_train_discrete_encoded { self.data_train_discrete_encoded} ")
+        self.train_discrete_W0_predicted_label = self.som_discrete_original_encoder.predict(self.data_train_discrete_encoded,weight_discrete_original)   
+        #print(f" self.train_discrete_W0_predicted_label { self.train_discrete_W0_predicted_label}  np.unique {np.unique( self.train_discrete_W0_predicted_label)}")
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original_encoder.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_encoded)   
         #print(f" self.predicted_clusters_indexes { predicted_clusters_indexes}")
         self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
-
-        self.training_new_embedding = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
-        
-       # self.do_COSOM(current_clustered_datas)
         
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
         # the value in predicted_clusters are true label value    
         transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        #print(f"transferred_predicted_label_train_W0 {transferred_predicted_label_train_W0}  np.unique  {np.unique(transferred_predicted_label_train_W0)}"  )
         self.getScore("train_discrete_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
         
         #*** when validate needs to use current mapping(the real situation mappping) rather than the training sessino mapping
-        self.test_discrete_W0_predicted_label = self.som_discrete_original.predict(self.data_test_discrete_unnormalized,weight_discrete_original)   
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original.weights0.shape[0], self.test_discrete_W0_predicted_label,self.data_test_discrete_unnormalized)   
+        self.test_discrete_W0_predicted_label = self.som_discrete_original_encoder.predict(self.data_test_discrete_encoded,weight_discrete_original)   
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original_encoder.weights0.shape[0], self.test_discrete_W0_predicted_label,self.data_test_discrete_encoded)   
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.test_label_all) ,0)    
         transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)   
         self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
 
 
 
+
+
+        #get all_features_mapping
+        self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
+
+
+        #softmax
+        """
+        self.discrete_data_embedding_softmax = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
+
         
-        dim= self.training_new_embedding.shape[1]
-        print(f"self.training_new_embedding  {self.training_new_embedding.shape} " )
+        dim= self.discrete_data_embedding_softmax.shape[1]
+        #print(f"self.training_new_embedding  {self.discrete_data_embedding.shape} " )
         # new som neuron number is not changed, m,n not change
-        self.som_newEmbedding = newSom.SOM(self.som_discrete_original.weights0.shape[0] , self.som_discrete_original.weights0.shape[1],dim) 
+        self.som_newEmbedding_softmax = newSom.SOM(self.som_discrete_original.weights0.shape[0] , self.som_discrete_original.weights0.shape[1],dim) 
 
-        self.som_newEmbedding.fit(self.training_new_embedding)
-        weight_newEmbedding = self.som_newEmbedding.weights0
+        self.som_newEmbedding_softmax.fit(self.discrete_data_embedding_softmax)
+        weight_newEmbedding_softmax = self.som_newEmbedding_softmax.weights0
 
-        self.train_discrete_W_newembedding_predicted_label = self.som_newEmbedding.predict(self.training_new_embedding,weight_newEmbedding)    
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_newEmbedding.weights0.shape[0], self.train_discrete_W_newembedding_predicted_label,self.training_new_embedding)   
+        self.train_W_newembedding_predicted_label = self.som_newEmbedding_softmax.predict(self.discrete_data_embedding_softmax,weight_newEmbedding_softmax)    
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_newEmbedding_softmax.weights0.shape[0], self.train_W_newembedding_predicted_label,self.discrete_data_embedding_softmax)   
 
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
         # the value in predicted_clusters are true label value    
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_discrete_W_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W0)
+
+        self.test_new_embedding_softmax = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+        self.test_discrete_newembedding_predicted_label = self.som_newEmbedding_softmax.predict(self.test_new_embedding_softmax,weight_newEmbedding_softmax) 
+
+        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_newEmbedding_softmax.shape[0],  self.test_discrete_newembedding_predicted_label,self.test_new_embedding_softmax) 
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)   # 2 means get self.PLabel_to_Tlabel_Mapping_W_Discrete 
+        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+        self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
+
+
+
+
+        """
+
+        self.discrete_data_embedding = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
+        
+        
+        dim= self.discrete_data_embedding.shape[1]
+        #print(f"self.training_new_embedding  {self.discrete_data_embedding.shape} " )
+        # new som neuron number is not changed, m,n not change
+        self.som_newEmbedding = newSom.SOM(self.som_discrete_original_encoder.weights0.shape[0] , self.som_discrete_original_encoder.weights0.shape[1],dim) 
+
+        self.som_newEmbedding.fit(self.discrete_data_embedding)
+        weight_newEmbedding = self.som_newEmbedding.weights0
+
+        self.train_W_newembedding_predicted_label = self.som_newEmbedding.predict(self.discrete_data_embedding,weight_newEmbedding)    
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_newEmbedding.weights0.shape[0], self.train_W_newembedding_predicted_label,self.discrete_data_embedding)   
+
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+        # the value in predicted_clusters are true label value    
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+
         self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W0)
 
         self.test_new_embedding = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
-        self.test_discrete_W_newembedding_predicted_label = self.som_newEmbedding.predict(self.test_new_embedding,weight_newEmbedding) 
+        self.test_discrete_newembedding_predicted_label = self.som_newEmbedding.predict(self.test_new_embedding,weight_newEmbedding) 
 
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_newEmbedding.shape[0],  self.test_discrete_W_newembedding_predicted_label,self.test_new_embedding) 
+        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_newEmbedding.shape[0],  self.test_discrete_newembedding_predicted_label,self.test_new_embedding) 
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_W_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
         self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
-
-        """
-        #    
-        #predicted_clusters_indexes = self.trainNewSomWithFeatureProbabilityData(self.data_train_discrete_unnormalized)
-        # the score with new som
-      #  predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_train_discrete_unnormalized)  # predicted_clusters_indexes = [1,1,2,3,1,1,2,1]
-        print(f"predicted_clusters_indexes {predicted_clusters_indexes}")
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_discrete_original.shape[0], predicted_clusters_indexes,self.data_train_discrete_unnormalized) 
-      
-       # print(f"predicted_clusters_transferred {predicted_clusters_transferred}")
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.train_label_all) ,2)  
-        transferred_predicted_label_train_W_transferred =  self.convertPredictedLabelValue(predicted_clusters_indexes,self.PLabel_to_Tlabel_Mapping_W_Discrete)      
-        self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W_transferred)
-
-
-
-      #  predicted_clusters_indexes = self.predictBasedonNeuronProbability(self.data_test_discrete_unnormalized)
-        predicted_clusters_indexes = self.predcitTestDatwithSOMProbability(self.data_test_discrete_unnormalized,weight_discrete_original.shape[0])
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_discrete_original.shape[0], predicted_clusters_indexes,self.data_test_discrete_unnormalized) 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue(predicted_clusters_indexes,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
-        self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
-        """
-        """
-
-        self.discrete_feateure_weights =[]
-        for i in range(0,len(self.data_train_discrete_onehotencoded)):
-            #scaler0 = StandardScaler().fit(self.data_train_discrete_onehotencoded[i])
-           # self.data_train_discrete_onehotencoded[i] = scaler0.transform(self.data_train_discrete_onehotencoded[i])
-            #print("self.soms[i].weights0 before {}  ".format(self.soms[i].weights0))
-            self.soms_discrete[i].fit(self.data_train_discrete_onehotencoded[i])
-            self.discrete_feateure_weights.append(self.soms_discrete[i].weights0)
-
-        # data_train_discrete_onehotencoded means the data_train_discrete_onehotencoded is changed to new data A1 is changed to A1' A1 is the original data A1' is the predicted class number in SOM_features 1
-        self.transferred_train_discrete_data = []
-        for i in range(0,len(self.data_train_discrete_onehotencoded)):
-            predicted_new_label = self.soms_discrete[i].predict(self.data_train_discrete_onehotencoded[i], self.discrete_feateure_weights[i])
-            self.transferred_train_discrete_data.append(predicted_new_label)
-
-        self.transferred_test_discrete_data = []
-      
-        for i in range(0,len(self.data_test_discrete_onehotencoded)):
-            scaler1 = StandardScaler().fit(self.data_test_discrete_onehotencoded[i])
-            self.data_test_discrete_onehotencoded[i] = scaler1.transform(self.data_test_discrete_onehotencoded[i])
-           # print("i {},self.data_test_all_transferred[i] {} ".format(i, self.data_test_all_transferred[i]))
-            predicted_new_label = self.soms_discrete[i].predict(self.data_test_discrete_onehotencoded[i], self.discrete_feateure_weights[i])
-           # print(" predicted_new_label {} I {} som[] i {}".format(np.unique(predicted_new_label), i,self.soms[i].m*self.soms[i].n))
-            self.transferred_test_discrete_data.append(predicted_new_label) 
-        
-        self.transferred_train_discrete_data = np.array(self.transferred_train_discrete_data).T
-        self.transferred_test_discrete_data = np.array(self.transferred_test_discrete_data).T
-        
-      #  scaler = StandardScaler().fit(self.transferred_train_discrete_data) 
-       # self.transferred_train_discrete_data_normalized = scaler.transform(self.transferred_train_discrete_data)
-        
-       # scaler2 = StandardScaler().fit(self.transferred_test_discrete_data)
-      #  self.transferred_test_discrete_data_normalized = scaler2.transform(self.transferred_test_discrete_data)
-
-        self.som_total_discrete_transferred.fit(self.transferred_train_discrete_data_normalized)
-        weight0_total_discrete = self.som_total_discrete_transferred.weights0
-        self.train_discrete_predicted_label_transferred = self.som_total_discrete_transferred.predict(self.transferred_train_discrete_data_normalized,weight0_total_discrete)   
-
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight0_total_discrete.shape[0], self.train_discrete_predicted_label_transferred,self.transferred_train_discrete_data) 
-
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred) ,2)  
-        transferred_predicted_label_train_W_transferred =  self.convertPredictedLabelValue(self.train_discrete_predicted_label_transferred,self.PLabel_to_Tlabel_Mapping_W_Discrete)      
-        self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W_transferred)
-
-
-        self.test_discrete_predicted_label_transferred = self.som_total_discrete_transferred.predict(self.transferred_test_discrete_data_normalized,weight0_total_discrete)   
-        transferred_predicted_label_test_W_transferred = self.transferClusterLabelToClassLabel(self.PLabel_to_Tlabel_Mapping_W_Discrete,self.test_discrete_predicted_label_transferred)    
-        self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
-
-        """
+          
+ 
         if self.test_discrete_score_W_discrete_n < self.test_discrete_score_W0_n:
              print("Not good nmi result for discrete features !!!!!")
         if self.test_discrete_score_W_discrete_a < self.test_discrete_score_W0_a:
             print("Not good ari result for discrete features  !!!!!")
      
+    def do_CDOSOM(self):
+        """
+        do hyper data
+        
+        """
+    
+
+        """
+        *****************************************************************************************************************************************
+        discrete data trained by som 
+        """
+        self.som.fit(self.data_train_all)
+        weight_all = self.som.weights0
+        print(f" all feature number {weight_all.shape[1]}")
+        
+        self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_all)   
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.m*self.som.n, self.train_W0_predicted_label,self.data_train_all)   
+  
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+        # the value in predicted_clusters are true label value    
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        self.getScore("all_train_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
+
+        self.test_W0_predicted_label = self.som.predict(self.data_test_all,weight_all)   
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.m*self.som.n, self.test_W0_predicted_label,self.data_test_all)   
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.test_label_all) ,0)  
+        transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        self.getScore("test_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
+    
+        self.getAllfeatureGroups()
+
+  
+
+        self.som_discrete_original_encoder.fit(self.data_train_discrete_unnormalized)
+        weight_discrete_original = self.som_discrete_original_encoder.weights0
+        print(f" discrete feature number {weight_discrete_original.shape[1]}")
+        #print(f"self.som_discrete_original.weights0 {self.som_discrete_original.weights0}")
+        self.train_discrete_W0_predicted_label = self.som_discrete_original_encoder.predict(self.data_train_discrete_unnormalized,weight_discrete_original)   
+      
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_original_encoder.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_discrete_unnormalized)   
+        #print(f" self.predicted_clusters_indexes { predicted_clusters_indexes}")
+        self.getEachNeuronProbabilityOfEachFeatureValue_softmax(predicted_clusters_indexes)
+
+        self.discrete_data_embedding = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
+        #print(f" self.discrete_data_embedding { self.discrete_data_embedding}")
+        #print(f" self.data_train_continuous { self.data_train_continuous}")
+        self.train_hybrid_embedding = np.concatenate((self.data_train_continuous,self.discrete_data_embedding), axis=1)  
+
+       # print(f" self.hybrid_embedding { self.train_hybrid_embedding}")
+        
+     
+
+        dim= self.train_hybrid_embedding.shape[1]
+       # print(f"self.training_new_embedding  {self.hybrid_embedding.shape} " )
+        # new som neuron number is not changed, m,n not change
+        self.som_newEmbedding = newSom.SOM(self.som.weights0.shape[0] , self.som.weights0.shape[1],dim) 
+
+        self.som_newEmbedding.fit(self.train_hybrid_embedding)
+        weight_newEmbedding = self.som_newEmbedding.weights0
+
+        self.train_W_newembedding_predicted_label = self.som_newEmbedding.predict(self.train_hybrid_embedding,weight_newEmbedding)    
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_newEmbedding.weights0.shape[0], self.train_W_newembedding_predicted_label,self.train_hybrid_embedding)   
+
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+        # the value in predicted_clusters are true label value    
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+        self.getScore("all_train_score_W_combine",self.train_label_all,transferred_predicted_label_train_W0)
+
+        self.test_new_embedding = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+        self.test_hybrid_embedding = np.concatenate((self.data_test_continuous,self.test_new_embedding), axis=1)  
+        self.test_discrete_newembedding_predicted_label = self.som_newEmbedding.predict(self.test_hybrid_embedding,weight_newEmbedding) 
+
+        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_newEmbedding.shape[0],  self.test_discrete_newembedding_predicted_label,self.test_hybrid_embedding) 
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
+        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_newembedding_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+        self.getScore("test_score_W_combine",self.test_label_all,transferred_predicted_label_test_W_transferred)
+
+ 
+        if self.test_score_W_combine_n < self.test_score_W0_n:
+             print("Not good nmi result for discrete features !!!!!")
+        if self.test_score_W_combine_a < self.test_score_W0_a:
+            print("Not good ari result for discrete features  !!!!!")
+        if self.test_score_W_combine_p < self.test_score_W0_p:
+            print("Not good purity result for discrete features  !!!!!") 

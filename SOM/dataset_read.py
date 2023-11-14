@@ -10,12 +10,16 @@ similar to clustering method in sklearn.
 @author: Riley Smith
 Created: 1-27-21
 """
-
+import pandas as pd
+import category_encoders as ce
 from math import e
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from tensorflow.keras.utils import to_categorical
-
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
+from category_encoders.binary import BinaryEncoder
+from sklearn.preprocessing import MultiLabelBinarizer
 class DATAREAD():
     def __init__(self):
          return
@@ -342,6 +346,51 @@ class DATAREAD():
             else: 
                 print("Unkonwn value {}".format(X.at[i,name]))
 
+    def stringToIntCarPriceDataSet(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+        #print(X[name])
+        for i in range(0, X.shape[0]):
+            if  X.at[i,name]== '' :
+                X.at[i,name]= -1            
+            elif  X.at[i,name]== '-1':
+                X.at[i,name]=4
+            elif  X.at[i,name]== '-2':
+                X.at[i,name]=5 
+            else: 
+                print("Unkonwn value {}".format(X.at[i,name]))
+
+    def stringToIntSalarydataSet(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+        #print(X[name])
+        for i in range(0, X.shape[0]):
+            if  X.at[i,name]== '' :
+                X.at[i,name]= -1            
+            elif  X.at[i,name]== 'Male' or  X.at[i,name]== 'Bachelor\'s'or  X.at[i,name]== 'Bachelor\'s Degree' or  X.at[i,name]== 'Australia'or  X.at[i,name]== 'White':
+                X.at[i,name]=0 
+            elif  X.at[i,name]== 'Female'or  X.at[i,name]== 'UK'or  X.at[i,name]== 'Black':
+                X.at[i,name]=1 
+            elif  X.at[i,name]== ' 'or  X.at[i,name]== 'High School'or  X.at[i,name]== 'USA'or  X.at[i,name]== 'Hispanic':
+                X.at[i,name]=2
+            elif  X.at[i,name]== 'Other'or  X.at[i,name]== 'Canada'or  X.at[i,name]== 'Korean':
+                X.at[i,name]=3
+            elif  X.at[i,name]== 'Master\'s Degree'or  X.at[i,name]== 'Master\'s'or  X.at[i,name]== 'China'or  X.at[i,name]== 'Welsh':
+                X.at[i,name]=4  
+            elif  X.at[i,name]== 'PhD'or  X.at[i,name]== 'phD' or  X.at[i,name]== 'Asian':
+                X.at[i,name]=5  
+            elif   X.at[i,name]== 'African American':
+                X.at[i,name]=6  
+            elif   X.at[i,name]== 'Chinese':
+                X.at[i,name]=7  
+            elif   X.at[i,name]== 'Mixed':
+                X.at[i,name]=8  
+            elif   X.at[i,name]== 'Australian':
+                X.at[i,name]=8  
+            elif   X.at[i,name]== 'nan':
+                X.at[i,name]=9 
+            else: 
+                print("Unkonwn value {}".format(X.at[i,name]))
+
+
 
     def stringToIntCardiovascularDataSet(self,X,name):
         X[name] = X[name].astype(str).str.strip()
@@ -376,7 +425,20 @@ class DATAREAD():
             elif  X.at[i,name]== '80+':
                 X.at[i,name]=11
             else: 
-                print("Unkonwn value {}".format(X.at[i,name]))            
+                print("Unkonwn value {}".format(X.at[i,name]))       
+
+    def changeCategoryTextToInt(self,X,name) :
+        X[name] = X[name].astype(str).str.strip()
+        names =[]
+        num = 0
+        for i in range(0, X.shape[0]):
+            if  X.at[i,name] in names:
+                X.at[i,name] = names.index( X.at[i,name] )
+            else: 
+                names.append( X.at[i,name] )
+                X.at[i,name] = num
+                num +=1
+
     #remove data and label which in a class, but the total number is too small in another way to reduce noise data
     def removeminorpartdata(self,Label,Data):
         allindexes = {}
@@ -398,21 +460,25 @@ class DATAREAD():
         
 
 
-    def initializedataset(self,Z,X,Y,attributute,unique_num=20):
+    def initializedataset(self,Z,X,Y,X_original_encoded,Y_original_encoded,attributute,unique_num=20):
          #X is traiing data  Y is test data all_data is X+Y
          self.X = X.sample(n =X.shape[0])
          self.data_test =  Y
          self.all_data = Z #when there is no test.csv X+Y = Z
          data_train = self.X 
          data_test =  self.data_test
+         data_train_original_encoded = X_original_encoded
+         data_test_original_encoded  = Y_original_encoded
          #attributute is the feature name of the label, which feature will be used as the class label
 
          label_train = data_train[attributute]
          label_test = data_test[attributute]
          data_train = data_train.drop(attributute,axis = 1)
          data_test = data_test.drop(attributute,axis = 1)
+         data_train_original_encoded = data_train_original_encoded.drop(attributute,axis = 1)
+         data_test_original_encoded = data_test_original_encoded.drop(attributute,axis = 1)
          #remove class that has few data
-         self.removeminorpartdata(label_train,data_train)
+        # self.removeminorpartdata(label_train,data_train)
        
          self.data_continuous_indexes = []
          self.data_discrete_indexes = []
@@ -423,13 +489,13 @@ class DATAREAD():
                 self.data_continuous_indexes.append(column_name)
             else: 
                 self.data_discrete_indexes.append(column_name)
-
+         print(f"self.data_continuous_indexes {self.data_continuous_indexes}"  )   
          if self.data_continuous_indexes == []:
             self.continuous_feature_num =0
          else:
             self.continuous_feature_num = len(self.data_continuous_indexes)
          
-         
+         #print(self.continuous_feature_num )
          if self.data_discrete_indexes == []:
             self.discrete_feature_num = 0
          else:
@@ -447,11 +513,17 @@ class DATAREAD():
          self.data_train = data_train.to_numpy(dtype=np.float64)
          self.all_data= self.all_data.to_numpy(dtype=np.float64)
          self.data_test = data_test.to_numpy(dtype=np.float64)
+
+         self.data_train_original_encoded = data_train_original_encoded.to_numpy(dtype=np.float64)
+         self.data_test_original_encoded = data_test_original_encoded.to_numpy(dtype=np.float64)
+
+
          #data that remove class data which has fewer data
-         self.cleanedData = self.cleanedData.to_numpy(dtype=np.float64)
-         self.cleanedLabel =  self.cleanedLabel.to_numpy(dtype=np.float64)
+         #self.cleanedData = self.cleanedData.to_numpy(dtype=np.float64)
+         #self.cleanedLabel =  self.cleanedLabel.to_numpy(dtype=np.float64)
 
          self.label_train = label_train.to_numpy(dtype=np.float64)
+        # print(len( self.label_train))
          self.label_test = label_test.to_numpy(dtype=np.float64)
 
          self.data_train_continuous = data_train_continuous.to_numpy(dtype=np.float64)
@@ -475,10 +547,10 @@ class DATAREAD():
         
          if self.data_train_continuous != [] :
             scaler3 = StandardScaler().fit(self.data_train_continuous)
-            self.data_train_continuous = scaler3.transform(self.data_train_continuous)
+            self.data_train_continuous_normalized = scaler3.transform(self.data_train_continuous)
          if self.data_test_continuous != [] :
             scaler4 = StandardScaler().fit(self.data_test_continuous)
-            self.data_test_continuous = scaler4.transform(self.data_test_continuous)
+            self.data_test_continuous_normalized = scaler4.transform(self.data_test_continuous)
         
 
         #*** data_test_discrete is normailzed after one-hot encoding
@@ -492,11 +564,11 @@ class DATAREAD():
             self.data_train_discrete_normalized = scaler6.transform(self.data_train_discrete)
          else:
             self.data_train_discrete_normalized =[]
-         if self.cleanedData != []:
-            scaler7 = StandardScaler().fit(self.cleanedData)
-            self.cleanedData = scaler7.transform(self.cleanedData)
+       #  if self.cleanedData != []:
+        #    scaler7 = StandardScaler().fit(self.cleanedData)
+       #     self.cleanedData = scaler7.transform(self.cleanedData)
 
-         self.transfertoonehotcode(self.data_train_discrete,self.data_test_discrete)
+         #self.transfertoonehotcode(self.data_train_discrete,self.data_test_discrete)
 
     #transfer discrete data to onehot code
     def transfertoonehotcode(self, train_data, test_data):
@@ -555,3 +627,67 @@ class DATAREAD():
                 
             empty_list.append(encoded)
         return empty_list
+    
+
+    def onehot_encoding(self,df,names):
+        print (df)
+        for name in names:
+            df = pd.get_dummies(df, columns=[name])       
+        print (df)  
+        self.original_encoding_data = df
+        #*** -1 the class labe is not included 
+        self.original_encoded_feature_num = df.shape[1]-1
+       # print(  self.original_encoded_feature_num )
+    def binary_encoding(self,df,names):
+        for name in names:
+            mlb = MultiLabelBinarizer()
+            df = df.join(pd.DataFrame(mlb.fit_transform(df.pop(name)),columns=mlb.classes_,index=df.index))
+        self.original_encoding_data = df
+        #*** -1 the class labe is not included 
+        self.original_encoded_feature_num = df.shape[1]-1
+
+
+    def effect_encoding(self,df,names):
+        encoder=ce.sum_coding.SumEncoder(cols=names,verbose=False,)         
+        df = encoder.fit_transform(df)
+        self.original_encoding_data = df
+        #*** -1 the class labe is not included 
+        self.original_encoded_feature_num = df.shape[1]-1
+
+    encoder= ce.BaseNEncoder(cols=['city'],return_df=True,base=5)
+
+    def baseN_encoding(self,df,names):
+        #print (df)
+        encoder= ce.BaseNEncoder(cols = names,return_df=True,base=5)
+        df = encoder.fit_transform(df)
+        #print (df)
+        self.original_encoding_data = df
+        #*** -1 the class labe is not included 
+        self.original_encoded_feature_num = df.shape[1]-1
+
+    def label_encoding(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+        le = LabelEncoder()
+        X[name] = le.fit_transform(X[name])  
+
+    def hash_encoding(self,df,names):
+        #print (df)
+        encoder= ce.hashing.HashingEncoder(cols = names,n_components=8)
+        df = encoder.fit_transform(df)
+       # print (df)
+        #for col in df.columns:
+        #    print(col)
+        self.original_encoding_data = df
+        #*** -1 the class labe is not included 
+        self.original_encoded_feature_num = df.shape[1]-1
+
+    def binary_encoding(self,df,names):
+        #print (df)
+        encoder= BinaryEncoder(cols = names, drop_invariant=True)
+        df = encoder.fit_transform(df)
+        #print (df)
+        #for col in df.columns:
+        #    print(col)
+        self.original_encoding_data = df
+        #*** -1 the class labe is not included 
+        self.original_encoded_feature_num = df.shape[1]-1
