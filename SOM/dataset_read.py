@@ -460,23 +460,23 @@ class DATAREAD():
         
 
 
-    def initializedataset(self,Z,X,Y,X_original_encoded,Y_original_encoded,attributute,unique_num=20):
+    def initializedataset(self,Z,X,Y,X_baseline_encoded,Y_baseline_encoded,attributute,unique_num=20):
          #X is traiing data  Y is test data all_data is X+Y
          self.X = X.sample(n =X.shape[0])
          self.data_test =  Y
          self.all_data = Z #when there is no test.csv X+Y = Z
          data_train = self.X 
          data_test =  self.data_test
-         data_train_original_encoded = X_original_encoded
-         data_test_original_encoded  = Y_original_encoded
+         data_train_baseline_encoded = X_baseline_encoded
+         data_test_baseline_encoded  = Y_baseline_encoded
          #attributute is the feature name of the label, which feature will be used as the class label
 
          label_train = data_train[attributute]
          label_test = data_test[attributute]
          data_train = data_train.drop(attributute,axis = 1)
          data_test = data_test.drop(attributute,axis = 1)
-         data_train_original_encoded = data_train_original_encoded.drop(attributute,axis = 1)
-         data_test_original_encoded = data_test_original_encoded.drop(attributute,axis = 1)
+         data_train_baseline_encoded = data_train_baseline_encoded.drop(attributute,axis = 1)
+         data_test_baseline_encoded = data_test_baseline_encoded.drop(attributute,axis = 1)
          #remove class that has few data
         # self.removeminorpartdata(label_train,data_train)
        
@@ -489,7 +489,7 @@ class DATAREAD():
                 self.data_continuous_indexes.append(column_name)
             else: 
                 self.data_discrete_indexes.append(column_name)
-         print(f"self.data_continuous_indexes {self.data_continuous_indexes}"  )   
+         #print(f"self.data_continuous_indexes {self.data_continuous_indexes}"  )   
          if self.data_continuous_indexes == []:
             self.continuous_feature_num =0
          else:
@@ -514,9 +514,9 @@ class DATAREAD():
          self.all_data= self.all_data.to_numpy(dtype=np.float64)
          self.data_test = data_test.to_numpy(dtype=np.float64)
 
-         self.data_train_original_encoded = data_train_original_encoded.to_numpy(dtype=np.float64)
-         self.data_test_original_encoded = data_test_original_encoded.to_numpy(dtype=np.float64)
-
+         self.data_train_baseline_encoded = data_train_baseline_encoded.to_numpy(dtype=np.float64)
+         self.data_test_baseline_encoded = data_test_baseline_encoded.to_numpy(dtype=np.float64)
+         #print(self.data_train_baseline_encoded)
 
          #data that remove class data which has fewer data
          #self.cleanedData = self.cleanedData.to_numpy(dtype=np.float64)
@@ -630,7 +630,7 @@ class DATAREAD():
     
 
     def onehot_encoding(self,df,names):
-        print (df)
+       # print (df)
         for name in names:
             df = pd.get_dummies(df, columns=[name])       
         print (df)  
@@ -667,6 +667,7 @@ class DATAREAD():
 
     def label_encoding(self,X,name):
         X[name] = X[name].astype(str).str.strip()
+        
         le = LabelEncoder()
         X[name] = le.fit_transform(X[name])  
 

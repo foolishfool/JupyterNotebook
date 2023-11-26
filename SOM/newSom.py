@@ -59,7 +59,7 @@ class SOM():
         rng = np.random.default_rng(None)
 
         self.weights= rng.normal(size=(m * n, dim))
-       # print("initila self.weigts {} ".format(self.weights))
+        #print("initila self.weigts {} ".format(self.weights.shape))
         self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
         self.weights_onehot = rng.normal(size=(m * n, dim))
@@ -382,7 +382,7 @@ class SOM():
             #print(f"self.weights0 = {self.weights0}")
         if(weightIndex == 1):
             self.weights1 = copy.deepcopy(self.weights)
-
+     
         return
 
     def fit_hamming( self, X, weightIndex = 0,epochs=1, shuffle=True):

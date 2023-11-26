@@ -122,18 +122,19 @@ class Experiment():
 
             m, n = self.topology_som(y)
        
-            som = newSom.SOM(m , n, dim=dataread.continuous_feature_num + dataread.original_encoded_feature_num)  
+            som = newSom.SOM(m , n, dim=dataread.continuous_feature_num + dataread.discrete_feature_num)  
+            #print(f"dim {dataread.continuous_feature_num + dataread.original_encoded_feature_num}")
             if  dataread.continuous_feature_num != 0:
              som_continusous = newSom.SOM(m , n, dim= dataread.continuous_feature_num)  
             else:
                 som_continusous =  newSom.SOM(m , n, dim= dataread.original_encoded_feature_num) 
             
             if  dataread.original_encoded_feature_num != 0:
-                som_discrete_original = newSom.SOM(m , n, dim= dataread.original_encoded_feature_num) 
+                som_discrete_baseline = newSom.SOM(m , n, dim= dataread.original_encoded_feature_num) 
                 som_total_discrete = newSom.SOM(m , n, dim= dataread.original_encoded_feature_num) 
             else: 
                 # som_discrete_original will be used in CDSOM initialize, so it cannot be null, although won't be used
-                som_discrete_original = newSom.SOM(m , n, dim= dataread.continuous_feature_num) 
+                som_discrete_baseline = newSom.SOM(m , n, dim= dataread.continuous_feature_num) 
                 som_total_discrete = som_continusous  
 
      
@@ -160,36 +161,36 @@ class Experiment():
              optimize_W = CDSOM.CDSOM(som,
                      som_continusous,
                      discrete_feature_soms,
-                     som_discrete_original,
+                     som_discrete_baseline,
                      som_total_discrete,
                      dataread.data_train,
                      dataread.data_train_continuous_normalized,
                      dataread.data_train_discrete,
                      dataread.data_train_discrete_normalized,
-                     dataread.data_train_original_encoded,
+                     dataread.data_train_baseline_encoded,
                      dataread.data_test,
                      dataread.data_test_continuous_normalized,
                      dataread.data_test_discrete,
                      dataread.data_test_discrete_normalized,
-                     dataread.data_test_original_encoded,
+                     dataread.data_test_baseline_encoded,
                      dataread.label_train,
                      dataread.label_test)  
             else:
                     optimize_W = CDSOM.CDSOM(som,
                      som_continusous,
                      discrete_feature_soms,
-                     som_discrete_original,
+                     som_discrete_baseline,
                      som_total_discrete,
                      dataread.data_train,
                      dataread.data_train_continuous,
                      dataread.data_train_discrete,
                      dataread.data_train_discrete_normalized,
-                     dataread.data_train_original_encoded,
+                     dataread.data_train_baseline_encoded,
                      dataread.data_test,
                      dataread.data_test_continuous,
                      dataread.data_test_discrete,
                      dataread.data_test_discrete_normalized,
-                     dataread.data_test_original_encoded,
+                     dataread.data_test_baseline_encoded,
                      dataread.label_train,
                      dataread.label_test)                        
 
