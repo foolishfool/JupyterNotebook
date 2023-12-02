@@ -489,12 +489,12 @@ class DATAREAD():
                 self.data_continuous_indexes.append(column_name)
             else: 
                 self.data_discrete_indexes.append(column_name)
-         #print(f"self.data_continuous_indexes {self.data_continuous_indexes}"  )   
+         print(f"self.data_continuous_indexes {self.data_continuous_indexes}"  )   
          if self.data_continuous_indexes == []:
             self.continuous_feature_num =0
          else:
             self.continuous_feature_num = len(self.data_continuous_indexes)
-         
+         print(f"self.continuous_feature_num {self.continuous_feature_num}"  )   
          #print(self.continuous_feature_num )
          if self.data_discrete_indexes == []:
             self.discrete_feature_num = 0
@@ -507,7 +507,7 @@ class DATAREAD():
          data_train_discrete = data_train[self.data_discrete_indexes]  
          data_test_continuous = data_test[self.data_continuous_indexes]
          data_test_discrete = data_test[self.data_discrete_indexes]  
-
+         #print(f"data_train {data_train}")
          #print(f"self.data_discrete_indexes {self.data_discrete_indexes} " )
         # transfer to numpy array
          self.data_train = data_train.to_numpy(dtype=np.float64)

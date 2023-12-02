@@ -392,12 +392,19 @@ class Experiment():
             axis[2].set_title("Purity Score")
 
 
-            print(f"test_discrete_score_W0_p mean {np.mean(test_discrete_score_W0_p)}")
-            print(f"test_discrete_score_W_discrete_p mean {np.mean(test_discrete_score_W_discrete_p)}")
-            print(f"test_discrete_score_W0_n mean {np.mean(test_discrete_score_W0_n)}")
-            print(f"test_discrete_score_W_discrete_n mean {np.mean(test_discrete_score_W_discrete_n)}")
-            print(f"test_discrete_score_W0_a mean {np.mean(test_discrete_score_W0_a)}")
-            print(f"test_discrete_score_W_discrete_a mean {np.mean(test_discrete_score_W_discrete_a)}")
+            #print(f"test_discrete_score_W0_p mean {np.mean(test_discrete_score_W0_p)}")
+            #print(f"test_discrete_score_W_discrete_p mean {np.mean(test_discrete_score_W_discrete_p)}")
+            #print(f"test_discrete_score_W0_n mean {np.mean(test_discrete_score_W0_n)}")
+            #print(f"test_discrete_score_W_discrete_n mean {np.mean(test_discrete_score_W_discrete_n)}")
+            #print(f"test_discrete_score_W0_a mean {np.mean(test_discrete_score_W0_a)}")
+            #print(f"test_discrete_score_W_discrete_a mean {np.mean(test_discrete_score_W_discrete_a)}")
+
+            print(f"test_score_W0_p mean {np.mean(test_score_W0_p)}")
+            print(f"test_score_W_combine_p mean {np.mean(test_score_W_combine_p)}")
+            print(f"test_score_W0_n mean {np.mean(test_score_W0_n)}")
+            print(f"test_score_W_combine_n mean {np.mean(test_score_W_combine_n)}")
+            print(f"test_score_W0_a mean {np.mean(test_score_W0_a)}")
+            print(f"test_score_W_combine_a mean {np.mean(test_score_W_combine_a)}")
 
             if type == 0:
                 axis[0].set_xlabel('Neuron number')
