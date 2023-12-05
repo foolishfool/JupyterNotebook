@@ -633,7 +633,7 @@ class DATAREAD():
        # print (df)
         for name in names:
             df = pd.get_dummies(df, columns=[name])       
-        print (df)  
+        #print (df)  
         self.original_encoding_data = df
         #*** -1 the class labe is not included 
         self.original_encoded_feature_num = df.shape[1]-1

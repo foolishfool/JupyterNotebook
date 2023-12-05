@@ -6,7 +6,6 @@ find intra communiyt in each neuron memberships and do the whole mapping and ret
 
 #from curses.ascii import NULL
 from scipy.special import softmax
-from asyncio.windows_events import NULL
 from sklearn import metrics
 from scipy import spatial
 import numpy as np
@@ -14,12 +13,10 @@ import math
 import sys
 import operator
 import copy
-from numpy import array
 import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics.cluster import adjusted_rand_score
-from sklearn.metrics import jaccard_score
 import newSom
 # unsupervised continus and discrete som
 class CDSOM():
@@ -705,7 +702,9 @@ class CDSOM():
     
     def getCommanIndexesRatioInNeurons_fuzzy(self, feature_group, one_neuron_predict_group):
         # difference with getCommanIndexesRatioInNeurons is the denomitor
-        return round(len(np.intersect1d(feature_group, one_neuron_predict_group))/len(one_neuron_predict_group),3)
+        if len(one_neuron_predict_group) !=0:
+            return round(len(np.intersect1d(feature_group, one_neuron_predict_group))/len(one_neuron_predict_group),3)
+        else: return 0
     def getFeatureGroups(self, feature_column_data):
         #feature_group = dictionary{value:[indexes], value2: [indexes]} feature_column_data =
         feature_group = {}
@@ -842,7 +841,7 @@ class CDSOM():
             #print(f"key {key} probability_list{probability_list}")
             probability_list = np.array(probability_list)
             onesinglefeatureneuronprobablity[key] = probability_list
-            print(f"key {key} probability_list) {probability_list} ")
+           # print(f"key {key} probability_list) {probability_list} ")
         return onesinglefeatureneuronprobablity
 
     def getOneSingleFeatureNeuronProbability_subjective(self, one_feature_dic, neuron_predicted_groups):
@@ -878,7 +877,7 @@ class CDSOM():
             #print(f"key {key} probability_list{probability_list}")
             probability_list = np.array(probability_list)
             onesinglefeatureneuronprobablity[key] = probability_list
-            print(f"key {key} probability_list fuzzy) {probability_list} ")
+            #print(f"key {key} probability_list fuzzy) {probability_list} ")
         return onesinglefeatureneuronprobablity
 
     def getOneSingleFeatureNeuronProbability_softmax(self, one_feature_dic, neuron_predicted_groups):
@@ -953,7 +952,30 @@ class CDSOM():
         #print(f"the original discrete data : {X} and proposed encoded data representation: {newX} ")
         return np.array(newX)
         
-
+    def getEmbeddingWithNeuronProbablity_fuzzy(self,X):
+        newX =[]
+        
+        for x in X:
+            newdata =[]
+            for j in range(0, len(x)):
+                #**** for certain situation, in the trainng set there is too many data , so we resampled them , as adata reslut in the test data the value has but in trainig data it doesnt have
+                if x[j] in self.all_features_mapping_fuzzy[j].keys():
+                #print(f"j {j} x[j] {x[j]}self.all_features_mapping[j]   {self.all_features_mapping[j]}")
+                    for value in self.all_features_mapping_fuzzy[j][x[j]]:
+                        newdata.append(value) 
+                else:
+                   # print(f"j{j} x[j]   {x[j] }  self.all_features_mapping[j].keys() {self.all_features_mapping[j].keys()}")
+                    fakekey = list(self.all_features_mapping_fuzzy[j])[0]
+                    #**** it is not correct, just for a certain dataset, which has lots of data but certain features have very small propration, so when resample the traiing data, that feature is not incluced, but in the test data it has such feature value 
+                    for value in self.all_features_mapping_fuzzy[j][fakekey]:
+                        newdata.append(value) 
+           # print(f"the original discrete data : {x} ")
+            #print(f"the proposed encoded data representation: {newdata} ")
+            newX.append(newdata)
+       # print(f"new embedding {newX}")
+        #print(f"the original discrete data : {X} and proposed encoded data representation: {newX} ")
+        return np.array(newX)
+        
     def topology_som(self, som_num):
             start = int(np.sqrt(som_num))
             factor = som_num / start
@@ -1160,7 +1182,7 @@ class CDSOM():
             self.getEachNeuronProbabilityOfEachFeatureValue_fuzzy(predicted_clusters_indexes)
 
         #train by baseline encoder
-        #if  fuzzy_set_no_probability == False:
+        if  fuzzy_set_no_probability == False:
             self.som_discrete_baseline_encoder.fit(self.data_train_baseline_encoded)
             weight_discrete_baseline = self.som_discrete_baseline_encoder.weights0
             self.train_discrete_W0_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_train_baseline_encoded,weight_discrete_baseline)   
@@ -1179,7 +1201,32 @@ class CDSOM():
             transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)   
             self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
 
-        #else:
+        else:
+            self.discrete_data_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized)
+            dim= self.discrete_data_embedding_sog_fuzzy.shape[1]
+            self.som_sog_fuzzy = newSom.SOM(self.som.weights0.shape[0] , self.som.weights0.shape[1],dim) 
+
+            self.som_sog_fuzzy.fit(self.discrete_data_embedding_sog_fuzzy)
+            weight_sog_fuzzy = self.som_sog_fuzzy.weights0
+
+            self.train_W_baseline_predicted_label = self.som_sog_fuzzy.predict(self.discrete_data_embedding_sog_fuzzy,weight_sog_fuzzy)    
+            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog_fuzzy.weights0.shape[0], self.train_W_baseline_predicted_label,self.discrete_data_embedding_sog_fuzzy)   
+
+            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+            # the value in predicted_clusters are true label value    
+            transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+
+            self.getScore("train_discrete_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
+
+            self.test_new_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized)
+            self.test_discrete_baseline_predicted_label = self.som_sog_fuzzy.predict(self.test_new_embedding_sog_fuzzy,weight_sog_fuzzy) 
+
+            predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog_fuzzy.shape[0],  self.test_discrete_baseline_predicted_label,self.test_new_embedding_sog_fuzzy) 
+            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
+            transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+            self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W_transferred)
+          
+ 
 
         #get new embedding data with SOG mapping
         self.discrete_data_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)   
@@ -1187,9 +1234,12 @@ class CDSOM():
         dim= self.discrete_data_embedding_sog.shape[1]
         #print(f"self.training_new_embedding  {self.discrete_data_embedding.shape} " )
         # new som neuron number is not changed, m,n not change
-        self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
-
+        if  fuzzy_set_no_probability == False:
+            self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
+        else:
+            self.som_sog = newSom.SOM(self.som_sog_fuzzy.weights0.shape[0] , self.som_sog_fuzzy.weights0.shape[1],dim) 
         self.som_sog.fit(self.discrete_data_embedding_sog)
+        
         weight_sog = self.som_sog.weights0
 
         self.train_W_baseline_predicted_label = self.som_sog.predict(self.discrete_data_embedding_sog,weight_sog)    

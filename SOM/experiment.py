@@ -1,17 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
-from numba import jit, cuda
-from numba.experimental import jitclass
-from operator import truediv
-from re import escape
-from tarfile import NUL
+
 import matplotlib.pyplot as plt
 from typing import List
 import newSom
 import CDSOM
 import numpy as np
 from sklearn.metrics import silhouette_score
-import scipy.stats as stats
 import pandas as pd
 import researchpy as rp
 
@@ -202,7 +197,7 @@ class Experiment():
                 # do the normaliziation but compared with som with unrmalization
                 optimize_W.do_COSOM(optimize_W.som_discrete_original,optimize_W.data_train_discrete_normalized, optimize_W.data_train_discrete_unnormalized, optimize_W.data_test_discrete_normalized,optimize_W.data_test_discrete_unnormalized,iscontinous_data_test,1)
             if compareType == 3: #discrete unnormalization
-                 optimize_W.do_DOSOM()
+                 optimize_W.do_DOSOM(True)
             if compareType == 4: # hybrid embedding continous + discrete_embedding
                  optimize_W.do_CDOSOM()    
 
