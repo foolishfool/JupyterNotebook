@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from pickle import TRUE
 import matplotlib.pyplot as plt
 from typing import List
 import newSom
@@ -199,7 +200,7 @@ class Experiment():
             if compareType == 3: #discrete unnormalization
                  optimize_W.do_DOSOM(True)
             if compareType == 4: # hybrid embedding continous + discrete_embedding
-                 optimize_W.do_CDOSOM()    
+                 optimize_W.do_CDOSOM(True)    
 
                  all_train_score_W0_n.append(optimize_W.all_train_score_W0_n)
                  all_train_score_W_combine_n.append(optimize_W.all_train_score_W_combine_n)

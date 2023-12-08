@@ -5,6 +5,7 @@ find intra communiyt in each neuron memberships and do the whole mapping and ret
 """
 
 #from curses.ascii import NULL
+from sklearn.cluster import KMeans
 from scipy.special import softmax
 from sklearn import metrics
 from scipy import spatial
@@ -285,7 +286,7 @@ class CDSOM():
             self.train_discrete_score_W_discrete_a = adjusted_rand_score(y_true,y_pred)
             print("train_discrete_score_W_discrete_a {}".format(self.train_discrete_score_W_discrete_a ))  
     
-    def get_indices_and_data_in_predicted_clusters(self,class_num_predicted,predicted_label,data_set):
+    def get_indices_and_data_in_predicted_clusters(self,class_num_predicted,predicted_label):
             
             """
             predicted_label = [1,1,2,3,1,1,2,1]
@@ -294,22 +295,24 @@ class CDSOM():
             """
 
             clusters_indexes = []
-            clusters_datas = []
+            #clusters_datas = []
             
             for i in range(0,class_num_predicted):
                 newlist = []
-                newdatalist = []
+                #newdatalist = []
                 for idx, y in enumerate(predicted_label): 
                     # is the cluster label
                     if(y == i):
                         x = idx
                         x = int(x)                      
                         newlist.append(x)  
-                        newdatalist.append(data_set[x])                        
+                        #newdatalist.append(data_set[x])                        
                 clusters_indexes.append(newlist)
-                clusters_datas.append(np.array(newdatalist))
-            
-            return clusters_indexes,clusters_datas
+                #clusters_datas.append(np.array(newdatalist))
+            #return clusters_indexes,clusters_datas
+            #DO NOT NEED clusters_datas TO SAVE ram
+            return clusters_indexes
+           
 
     # from data index to  [[2,35,34,3,23],[211,12,2,1]] get cluster index [[0,0,1,1] [0,0,1]]
     def get_mapped_class_in_clusters(self,clusters_indexes,real_class_label):
@@ -1174,7 +1177,7 @@ class CDSOM():
    
         weight_original = self.som.weights0
         self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_original)   
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label,self.data_train_all)      
+        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label)      
         #Get SOG Mapping
         self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
 
@@ -1186,7 +1189,7 @@ class CDSOM():
             self.som_discrete_baseline_encoder.fit(self.data_train_baseline_encoded)
             weight_discrete_baseline = self.som_discrete_baseline_encoder.weights0
             self.train_discrete_W0_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_train_baseline_encoded,weight_discrete_baseline)   
-            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_baseline_encoded)   
+            predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.train_discrete_W0_predicted_label)   
 
             self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
             # the value in predicted_clusters are true label value    
@@ -1196,76 +1199,59 @@ class CDSOM():
             
             #*** when validate needs to use current mapping(the real situation mappping) rather than the training sessino mapping
             self.test_discrete_W0_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_test_baseline_encoded,weight_discrete_baseline)   
-            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.test_discrete_W0_predicted_label,self.data_test_baseline_encoded)   
+            predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.test_discrete_W0_predicted_label)   
             self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.test_label_all) ,0)    
             transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)   
             self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W0)
 
         else:
             self.discrete_data_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized)
-            dim= self.discrete_data_embedding_sog_fuzzy.shape[1]
-            self.som_sog_fuzzy = newSom.SOM(self.som.weights0.shape[0] , self.som.weights0.shape[1],dim) 
-
-            self.som_sog_fuzzy.fit(self.discrete_data_embedding_sog_fuzzy)
-            weight_sog_fuzzy = self.som_sog_fuzzy.weights0
-
-            self.train_W_baseline_predicted_label = self.som_sog_fuzzy.predict(self.discrete_data_embedding_sog_fuzzy,weight_sog_fuzzy)    
-            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog_fuzzy.weights0.shape[0], self.train_W_baseline_predicted_label,self.discrete_data_embedding_sog_fuzzy)   
-
-            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
-            # the value in predicted_clusters are true label value    
-            transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
-
-            self.getScore("train_discrete_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
-
             self.test_new_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized)
-            self.test_discrete_baseline_predicted_label = self.som_sog_fuzzy.predict(self.test_new_embedding_sog_fuzzy,weight_sog_fuzzy) 
+            self.KmeansClusterEncoding(self.discrete_data_embedding_sog_fuzzy,self.test_new_embedding_sog_fuzzy,"train_discrete_score_W0","test_discrete_score_W0")
 
-            predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog_fuzzy.shape[0],  self.test_discrete_baseline_predicted_label,self.test_new_embedding_sog_fuzzy) 
-            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-            transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
-            self.getScore("test_discrete_score_W0",self.test_label_all,transferred_predicted_label_test_W_transferred)
-          
  
 
         #get new embedding data with SOG mapping
         self.discrete_data_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)   
-        
-        dim= self.discrete_data_embedding_sog.shape[1]
+        self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+
+        self.KmeansClusterEncoding(self.discrete_data_embedding_sog,self.test_new_embedding_sog,"train_discrete_score_W_discrete","test_discrete_score_W_discrete")
+
+       # dim= self.discrete_data_embedding_sog.shape[1]
         #print(f"self.training_new_embedding  {self.discrete_data_embedding.shape} " )
         # new som neuron number is not changed, m,n not change
-        if  fuzzy_set_no_probability == False:
-            self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
-        else:
-            self.som_sog = newSom.SOM(self.som_sog_fuzzy.weights0.shape[0] , self.som_sog_fuzzy.weights0.shape[1],dim) 
-        self.som_sog.fit(self.discrete_data_embedding_sog)
-        
-        weight_sog = self.som_sog.weights0
+       # if  fuzzy_set_no_probability == False:
+       #     self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
+       # else:
+       #     self.som_sog = newSom.SOM(self.som_sog_fuzzy.weights0.shape[0] , self.som_sog_fuzzy.weights0.shape[1],dim) 
+       # self.som_sog.fit(self.discrete_data_embedding_sog)
+       # 
+       # weight_sog = self.som_sog.weights0
 
-        self.train_W_baseline_predicted_label = self.som_sog.predict(self.discrete_data_embedding_sog,weight_sog)    
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.train_W_baseline_predicted_label,self.discrete_data_embedding_sog)   
+      # self.train_W_baseline_predicted_label = self.som_sog.predict(self.discrete_data_embedding_sog,weight_sog)    
+      # predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.train_W_baseline_predicted_label,self.discrete_data_embedding_sog)   
 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
-        # the value in predicted_clusters are true label value    
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+      # self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+      # # the value in predicted_clusters are true label value    
+      # transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
 
-        self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W0)
+      # self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W0)
 
-        self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
-        self.test_discrete_baseline_predicted_label = self.som_sog.predict(self.test_new_embedding_sog,weight_sog) 
+      # self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+      # self.test_discrete_baseline_predicted_label = self.som_sog.predict(self.test_new_embedding_sog,weight_sog) 
 
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog.shape[0],  self.test_discrete_baseline_predicted_label,self.test_new_embedding_sog) 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
-        self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
-          
+      # predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog.shape[0],  self.test_discrete_baseline_predicted_label,self.test_new_embedding_sog) 
+      # self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
+      # transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+      # self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
+      #   
  
         if self.test_discrete_score_W_discrete_n < self.test_discrete_score_W0_n:
              print("Not good nmi result for discrete features !!!!!")
         if self.test_discrete_score_W_discrete_a < self.test_discrete_score_W0_a:
             print("Not good ari result for discrete features  !!!!!")
      
-    def do_CDOSOM(self):
+    def do_CDOSOM(self,fuzzy_set_no_probability = False):
         """
         do hyper data
         
@@ -1275,7 +1261,7 @@ class CDSOM():
         self.som.fit(self.data_train_all)   
         weight_original = self.som.weights0
         self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_original)   
-        predicted_clusters_indexes_sog, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label,self.data_train_all)      
+        predicted_clusters_indexes_sog = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label)      
         #Get SOG Mapping
         self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes_sog)
 
@@ -1290,75 +1276,89 @@ class CDSOM():
        # predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_baseline_encoded)   
         
        # self.train_hybrid_embedding_baseline = np.concatenate((self.data_train_continuous,self.data_train_baseline_encoded), axis=1)  
-        
+        if  fuzzy_set_no_probability == False:
 
-        dim= self.data_train_baseline_encoded.shape[1]
-        # new som neuron number is not changed, m,n not change
-        self.som_discrete_baseline_encoder = newSom.SOM(self.som.weights0.shape[0] , self.som.weights0.shape[1],dim) 
+            dim= self.data_train_baseline_encoded.shape[1]
+            # new som neuron number is not changed, m,n not change
+            self.som_discrete_baseline_encoder = newSom.SOM(self.som.weights0.shape[0] , self.som.weights0.shape[1],dim) 
 
-        self.som_discrete_baseline_encoder.fit(self.data_train_baseline_encoded)
-        weight_baseline = self.som_discrete_baseline_encoder.weights0
+            self.som_discrete_baseline_encoder.fit(self.data_train_baseline_encoded)
+            weight_baseline = self.som_discrete_baseline_encoder.weights0
 
-        self.train_W_baseline_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_train_baseline_encoded,weight_baseline)    
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.train_W_baseline_predicted_label,self.data_train_baseline_encoded)   
+            self.train_W_baseline_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_train_baseline_encoded,weight_baseline)    
+            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.train_W_baseline_predicted_label,self.data_train_baseline_encoded)   
 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
-        # the value in predicted_clusters are true label value    
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
-        self.getScore("all_train_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
-
-
-        #self.test_hybrid_embedding_baseline = np.concatenate((self.data_test_continuous,self.data_test_baseline_encoded), axis=1)  
-
-        #self.test_new_embedding = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
-        #self.test_hybrid_embedding_original = np.concatenate((self.data_test_continuous,self.test_new_embedding), axis=1)  
-        self.test_discrete_baseline_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_test_baseline_encoded,weight_baseline) 
-
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_baseline.shape[0],  self.test_discrete_baseline_predicted_label,self.data_test_baseline_encoded) 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
-        self.getScore("test_score_W0",self.test_label_all,transferred_predicted_label_test_W_transferred)
+            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+            # the value in predicted_clusters are true label value    
+            transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+            self.getScore("all_train_score_W0",self.train_label_all,transferred_predicted_label_train_W0)
 
 
-        
-        
+            #self.test_hybrid_embedding_baseline = np.concatenate((self.data_test_continuous,self.data_test_baseline_encoded), axis=1)  
+
+            #self.test_new_embedding = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+            #self.test_hybrid_embedding_original = np.concatenate((self.data_test_continuous,self.test_new_embedding), axis=1)  
+            self.test_discrete_baseline_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_test_baseline_encoded,weight_baseline) 
+
+            predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_baseline.shape[0],  self.test_discrete_baseline_predicted_label,self.data_test_baseline_encoded) 
+            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
+            transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+            self.getScore("test_score_W0",self.test_label_all,transferred_predicted_label_test_W_transferred)
+
+        else:
+            self.getEachNeuronProbabilityOfEachFeatureValue_fuzzy(predicted_clusters_indexes_sog)
+
+            self.discrete_data_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized)
+            self.train_hybrid_embedding_sog_fuzzy = np.concatenate((self.data_train_continuous,self.discrete_data_embedding_sog_fuzzy), axis=1)  
+
+            self.test_new_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized)
+            self.test_hybrid_embedding_sog_fuzzy = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog_fuzzy), axis=1)  
+
+            self.KmeansClusterEncoding(self.train_hybrid_embedding_sog_fuzzy,self.test_hybrid_embedding_sog_fuzzy,"all_train_score_W0","test_score_W0")
         #SOG
         
+        if  fuzzy_set_no_probability == False:
 
+            self.discrete_data_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
 
-        self.discrete_data_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
+            self.train_hybrid_embedding_sog = np.concatenate((self.data_train_continuous,self.discrete_data_embedding_sog), axis=1)  
 
-        self.train_hybrid_embedding_sog = np.concatenate((self.data_train_continuous,self.discrete_data_embedding_sog), axis=1)  
     
-   
 
-        dim= self.train_hybrid_embedding_sog.shape[1]  
-        # new som neuron number is not changed, m,n not change
-        self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
+            dim= self.train_hybrid_embedding_sog.shape[1]  
+            # new som neuron number is not changed, m,n not change
+            self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
 
-        self.som_sog.fit(self.train_hybrid_embedding_sog)
-        weight_sog = self.som_sog.weights0
+            self.som_sog.fit(self.train_hybrid_embedding_sog)
+            weight_sog = self.som_sog.weights0
 
-        self.train_W_baseline_predicted_label = self.som_sog.predict(self.train_hybrid_embedding_sog,weight_sog)    
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.train_W_baseline_predicted_label,self.train_hybrid_embedding_sog)   
+            self.train_W_baseline_predicted_label = self.som_sog.predict(self.train_hybrid_embedding_sog,weight_sog)    
+            predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.train_W_baseline_predicted_label,self.train_hybrid_embedding_sog)   
 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
-        # the value in predicted_clusters are true label value    
-        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
+            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+            # the value in predicted_clusters are true label value    
+            transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
 
-        self.getScore("all_train_score_W_combine",self.train_label_all,transferred_predicted_label_train_W0)
+            self.getScore("all_train_score_W_combine",self.train_label_all,transferred_predicted_label_train_W0)
 
-        self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
-        self.test_hybrid_embedding_sog = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog), axis=1)  
+            self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+            self.test_hybrid_embedding_sog = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog), axis=1)  
 
-        self.test_discrete_baseline_predicted_label = self.som_sog.predict(self.test_hybrid_embedding_sog,weight_sog) 
+            self.test_discrete_baseline_predicted_label = self.som_sog.predict(self.test_hybrid_embedding_sog,weight_sog) 
 
-        predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog.shape[0],  self.test_discrete_baseline_predicted_label,self.test_hybrid_embedding_sog) 
-        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
-        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
-        self.getScore("test_score_W_combine",self.test_label_all,transferred_predicted_label_test_W_transferred)
+            predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog.shape[0],  self.test_discrete_baseline_predicted_label,self.test_hybrid_embedding_sog) 
+            self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
+            transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+            self.getScore("test_score_W_combine",self.test_label_all,transferred_predicted_label_test_W_transferred)
 
- 
+        else:
+            self.discrete_data_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)
+            self.train_hybrid_embedding_sog = np.concatenate((self.data_train_continuous,self.discrete_data_embedding_sog), axis=1)  
+            self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
+            self.test_hybrid_embedding_sog = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog), axis=1)  
+
+            self.KmeansClusterEncoding(self.train_hybrid_embedding_sog,self.test_hybrid_embedding_sog,"all_train_score_W_combine","test_score_W_combine")
+
         if self.test_score_W_combine_n < self.test_score_W0_n:
              print("Not good nmi result for discrete features !!!!!")
         if self.test_score_W_combine_a < self.test_score_W0_a:
@@ -1366,4 +1366,25 @@ class CDSOM():
         if self.test_score_W_combine_p < self.test_score_W0_p:
             print("Not good purity result for discrete features  !!!!!") 
 
+    def KmeansClusterEncoding(self,X,Y,scoreName1,scoreName2):
+        #X  is self.train_new_embedding_sog or self.train_new_embedding_sog_fuzzy
+        kmeans = KMeans(n_clusters=self.som.weights0.shape[0], random_state=0, n_init="auto").fit(X)
+        self.train_W_baseline_predicted_label = kmeans.labels_  
+        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W_baseline_predicted_label)   
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
+        # the value in predicted_clusters are true label value    
+        transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
 
+        self.getScore(scoreName1,self.train_label_all,transferred_predicted_label_train_W0)
+
+        #self.test_new_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized)
+        
+        #Y is self.test_new_embedding_sog or self.test_new_embedding_sog_fuzzy
+        self.test_discrete_baseline_predicted_label = kmeans.predict(Y)  
+        predicted_clusters_transferred = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.test_discrete_baseline_predicted_label) 
+        
+        #self.test_discrete_baseline_predicted_label = self.som_sog_fuzzy.predict(self.test_new_embedding_sog_fuzzy,weight_sog_fuzzy) 
+        predicted_clusters_transferred = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0],  self.test_discrete_baseline_predicted_label) 
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
+        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
+        self.getScore(scoreName2,self.test_label_all,transferred_predicted_label_test_W_transferred)     
