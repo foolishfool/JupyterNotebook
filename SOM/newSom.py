@@ -541,6 +541,8 @@ class SOM():
 
         # Make sure X has proper shape
         #print("len(X.shape) {}".format(len(X.shape)))
+        if (len(X.shape) == 1):
+            print(f"X{X}")
         assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
         assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
      
