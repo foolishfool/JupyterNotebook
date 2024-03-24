@@ -96,6 +96,7 @@ class Experiment():
                                         all_recall_score_sog,
                                         all_precision_score_sog,
                                         all_f1_score_sog,
+                                        features_choosen
                                         ):
 
             m, n = self.topology_som(y)
@@ -133,9 +134,9 @@ class Experiment():
                      dataread.label_test)                        
 
 
-            optimize_W.do_DOSOM()
+            optimize_W.do_DOSOM(features_choosen)
 
-            
+              
 
 
             all_accuracy_score_original.append(optimize_W.accuracy_score_original)
@@ -151,7 +152,7 @@ class Experiment():
             #all_log_loss_score_sog.append(optimize_W.log_loss_sog)
 
 
-        def UTtest_Discrete( self, dataread, class_num, neuron_scope_num, interval ):
+        def UTtest_Discrete( self, dataread, class_num, unstable_repeat_num, interval, features_choosen ):
             
 
             # type = 0 use scope_num type = 1 use unstable_repeat_num
@@ -168,12 +169,12 @@ class Experiment():
             all_log_loss_sog =[]
             plot_unit = [class_num]
 
-            y = class_num
-            while y <= neuron_scope_num:
-                print("neuron unit number: {}".format(y))           
+            y = 1
+            while y <= unstable_repeat_num:
+                print("Experiment number: {}".format(y))           
                 self.InitializedExperimentDataList(
                                         dataread,
-                                        y,
+                                        class_num,
                                         all_accuracy_score_original,
                                         all_recall_score_original,
                                         all_precision_score_original,
@@ -181,10 +182,11 @@ class Experiment():
                                         all_accuracy_score_sog ,
                                         all_recall_score_sog ,
                                         all_precision_score_sog ,
-                                        all_f1_score_sog                                      
+                                        all_f1_score_sog,
+                                        features_choosen                                     
                                         )        
-                y =y + interval
-                if(y<= neuron_scope_num):
+                y =y + 1
+                if(y<= unstable_repeat_num):
                     plot_unit.append(y)
             
             
@@ -210,11 +212,11 @@ class Experiment():
 
 
 
-            axis[0].set_xlabel('Neuron number')
-            axis[1].set_xlabel('Neuron number')
-            axis[2].set_xlabel('Neuron number')
+            axis[0].set_xlabel('Experiment Time')
+            axis[1].set_xlabel('Experiment Time')
+            axis[2].set_xlabel('Experiment Time')
 
-            axis[3].set_xlabel('Neuron number')
+            axis[3].set_xlabel('Experiment Time')
             #axis[4].set_xlabel('Neuron number')
 
                    

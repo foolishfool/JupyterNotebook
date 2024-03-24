@@ -12,8 +12,11 @@ Created: 1-27-21
 """
 import pandas as pd
 import category_encoders as ce
+import matplotlib.pyplot as plt
+from fcmeans import FCM
 from math import e
 import numpy as np
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from tensorflow.keras.utils import to_categorical
 from sklearn.preprocessing import OneHotEncoder
@@ -384,9 +387,9 @@ class DATAREAD():
             elif   X.at[i,name]== 'Mixed':
                 X.at[i,name]=8  
             elif   X.at[i,name]== 'Australian':
-                X.at[i,name]=8  
+                X.at[i,name]=9  
             elif   X.at[i,name]== 'nan':
-                X.at[i,name]=9 
+                X.at[i,name]=10 
             else: 
                 print("Unkonwn value {}".format(X.at[i,name]))
 
@@ -426,6 +429,44 @@ class DATAREAD():
                 X.at[i,name]=11
             else: 
                 print("Unkonwn value {}".format(X.at[i,name]))       
+
+
+    def stringToIntHairFalldataSet(self,X,name):
+        X[name] = X[name].astype(str).str.strip()
+        #print(X[name])
+        for i in range(0, X.shape[0]):
+            if  X.at[i,name]== '' :
+                X.at[i,name]= -1            
+            elif  X.at[i,name]== 'Yes' or  X.at[i,name]== 'No Data'or    X.at[i,name]== 'Moderate':
+                X.at[i,name]=0 
+            elif  X.at[i,name]== 'No'or  X.at[i,name]== 'Eczema'or  X.at[i,name]== 'Antifungal Cream'or  X.at[i,name]== 'Protein deficiency'or  X.at[i,name]== 'High':
+                X.at[i,name]=1 
+            elif  X.at[i,name]== 'Dermatosis'or  X.at[i,name]== ''or  X.at[i,name]== 'Accutane'or  X.at[i,name]== 'Biotin Deficiency 'or  X.at[i,name]== 'Low':
+                X.at[i,name]=2
+            elif  X.at[i,name]== 'Ringworm'or  X.at[i,name]== 'Chemotherapy'or  X.at[i,name]== 'Iron deficiency':
+                X.at[i,name]=3
+            elif  X.at[i,name]== 'Psoriasis'or  X.at[i,name]== 'Steroids'or  X.at[i,name]== 'Selenium deficiency'or  X.at[i,name]== 'Welsh':
+                X.at[i,name]=4  
+            elif  X.at[i,name]== 'Alopecia Areata 'or  X.at[i,name]== 'Rogaine' or  X.at[i,name]== 'Omega-3 fatty acids':
+                X.at[i,name]=5  
+            elif   X.at[i,name]== 'Androgenetic Alopecia'or  X.at[i,name]== 'Blood Pressure Medication'or  X.at[i,name]== 'Zinc Deficiency':
+                X.at[i,name]=6  
+            elif   X.at[i,name]== 'Seborrheic Dermatitis'or  X.at[i,name]== 'Immunomodulators'or  X.at[i,name]== 'Vitamin A Deficiency':
+                X.at[i,name]=7  
+            elif   X.at[i,name]== 'Scalp Infection'or  X.at[i,name]== 'Antidepressants 'or  X.at[i,name]== 'Vitamin D Deficiency':
+                X.at[i,name]=8  
+            elif   X.at[i,name]== 'Thyroid Problems'or  X.at[i,name]== 'Heart Medication 'or  X.at[i,name]== 'Vitamin E deficiency':
+                X.at[i,name]=9 
+            elif   X.at[i,name]== 'Dermatitis'or X.at[i,name]== 'Antibiotics' :
+                X.at[i,name]=10 
+            elif   X.at[i,name]== 'nan'or  X.at[i,name]== 'Magnesium deficiency':
+                X.at[i,name]=11 
+            else: 
+                print("Unkonwn value {}".format(X.at[i,name]))
+
+
+
+
 
     def changeCategoryTextToInt(self,X,name) :
         X[name] = X[name].astype(str).str.strip()
@@ -796,3 +837,69 @@ class DATAREAD():
          else:
             self.data_train_discrete_normalized =[]
 
+    def PCA_Comparision(self):
+        pca1 = PCA()
+        pca1.fit_transform(self.data_train_discrete)
+       # print(self.data_train_discrete.shape)
+        #print("Base Line PCA feature importance")
+        #print(abs(pca1.components_))
+        self.RankingFeatureImportance(abs(pca1.components_),self.data_train_discrete.shape[1])
+        #print("Base Line PCA explained_variance_ratio_")
+        print(pca1.explained_variance_ratio_)
+        plt.bar(
+            range(1,len(pca1.explained_variance_)+1),
+            pca1.explained_variance_
+            )
+        
+        
+        plt.xlabel('PCA Feature')
+        plt.ylabel('Explained variance')
+        plt.title('Feature Explained Variance')
+        plt.show()
+
+       # pca2 = PCA()
+       # print(self.discrete_data_embedding_sog.shape)
+       # pca2.fit_transform(self.discrete_data_embedding_sog)
+       # #print("SOG PCA feature importance")
+       # #print(abs(pca2.components_))
+       # self.RankingFeatureImportance(abs(pca2.components_),self.discrete_data_embedding_sog.shape[1])
+       # print("SOG PCA explained_variance_ratio_")
+       # print(pca2.explained_variance_ratio_)
+       # plt.bar(
+       #     range(1,len(pca2.explained_variance_)+1),
+       #     pca2.explained_variance_
+       #     )
+       # 
+       # 
+       # plt.xlabel('PCA Feature')
+       # plt.ylabel('Explained variance')
+       # plt.title('Feature Explained Variance')
+       # plt.show()
+
+    def RankingFeatureImportance(self,X,pc_num):
+        d ={}
+        for i in range(0,pc_num):
+           if i< pc_num:
+               d[i] = []
+        for x in X:
+           for j in range(0,len(x)):
+               d[j].append(x[j])
+        
+        
+        for l in range(0,pc_num):
+            sorted_index = [sorted(d[l]).index(x) for x in d[l]]
+            sorted_list = sorted(d[l], reverse=True)
+            transfered_list = self.transferValueToproporation(sorted_list)
+            print(f"Sorted feature index for component {l} {sorted_index}" )
+            #print(f"Sorted imporance porporation for component {l}  {sorted_list}" )
+            print(f"Sorted imporance porporation for component {l}  {transfered_list}" )
+            #print(f"sum  {sum(sorted_list)}")
+    
+    def transferValueToproporation(self,list):
+        sum_num = sum(list)
+        transfered_list =[x/sum_num for x in list]
+        return transfered_list
+    
+    def test(self):
+        my_model = FCM(n_clusters=2) # we use two cluster as an example
+        my_model.fit(self.data_train) ## X, numpy array. rows:samples columns:features
