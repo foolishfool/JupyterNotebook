@@ -96,7 +96,8 @@ class Experiment():
                                         all_recall_score_sog,
                                         all_precision_score_sog,
                                         all_f1_score_sog,
-                                        features_choosen
+                                        features_choosen,
+                                        feature_combination_number
                                         ):
 
             m, n = self.topology_som(y)
@@ -134,7 +135,7 @@ class Experiment():
                      dataread.label_test)                        
 
 
-            optimize_W.do_DOSOM(features_choosen)
+            optimize_W.do_DOSOM(features_choosen,feature_combination_number)
 
               
 
@@ -152,7 +153,7 @@ class Experiment():
             #all_log_loss_score_sog.append(optimize_W.log_loss_sog)
 
 
-        def UTtest_Discrete( self, dataread, class_num, unstable_repeat_num, interval, features_choosen ):
+        def UTtest_Discrete( self, dataread, class_num, unstable_repeat_num, interval,  features_choosen ,feature_combination_number):
             
 
             # type = 0 use scope_num type = 1 use unstable_repeat_num
@@ -183,7 +184,7 @@ class Experiment():
                                         all_recall_score_sog ,
                                         all_precision_score_sog ,
                                         all_f1_score_sog,
-                                        features_choosen                                     
+                                        features_choosen,feature_combination_number                                  
                                         )        
                 y =y + 1
                 if(y<= unstable_repeat_num):
