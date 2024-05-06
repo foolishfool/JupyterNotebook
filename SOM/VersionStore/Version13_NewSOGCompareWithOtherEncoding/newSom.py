@@ -59,6 +59,7 @@ class SOM():
         rng = np.random.default_rng(None)
 
         self.weights= rng.normal(size=(m * n, dim))
+       # self.weights = np.zeros((m*n, dim))
         #print("initila self.weigts {} ".format(self.weights.shape))
         self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
@@ -163,7 +164,7 @@ class SOM():
         """
         Do one step of training on the given input vector.
         """
-        #print(f"x {x}")
+      #  print(f"x {x}")
         # Stack x to have one row per weight 
         x_stack = np.stack([x]*(self.m*self.n), axis=0)
         #print("x_stack {}".format(x_stack))
@@ -172,10 +173,12 @@ class SOM():
         # x_stack , with mxn row , each row has the same array: x
         # Get index of best matching unit
        # print(showlog)
-        #if showlog == True:
-        #    print("x {} {}".format(x, self.weights.shape) )
+        if showlog == True:
+            print("x {} ".format(x) )
         bmu_index = self._find_bmu(x,self.weights,showlog)
-        
+        if showlog == True:
+            print("bmu_index{}".format(bmu_index))
+       # print("self.weights{}".format(self.weights))
         #print("bmu_index{}".format(bmu_index));
         # Find location of best matching unit, _locations is all the indices for a given matrix for array
         # bmu_location is the bmu_indexth element in _locations, such as if bmu_index = 4 in [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]] it return [2,0]
@@ -305,7 +308,7 @@ class SOM():
         return np.sum(np.square(x - bmu))
 
     
-    def fit( self, X, weightIndex = 0,epochs=1, shuffle=True, showlog = False):
+    def fit( self, X, weightIndex = 0,epochs=1, shuffle=False, showlog = False):
         """
         Take data (a tensor of type float64) as input and fit the SOM to that
         data for the specified number of epochs.
@@ -346,10 +349,10 @@ class SOM():
             else:
                 indices = np.arange(n_samples)                       
             
-
+          #  print(f"indices {indices}")
          # Train
             for idx in indices:
-
+                
              # Break if past max number of iterations
                 if global_iter_counter > self.max_iter:
                     break
@@ -357,7 +360,7 @@ class SOM():
                 #print(X[idx] )
                 
                 input = X[idx]
-
+              #  print(f"idx {idx}") 
                 #if (type(input) is np.float64):
                 #    input = [input]
                 # Do one step of training

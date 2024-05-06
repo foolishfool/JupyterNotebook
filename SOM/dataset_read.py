@@ -502,9 +502,9 @@ class DATAREAD():
 
 
     def initializedataset(self,Z,X,Y,X_baseline_encoded,Y_baseline_encoded,attributute,unique_num=20 ):
-         print(11111111)
+        # print(11111111)
          #X is training data  Y is test data all_data is X+Y
-         self.X = X.sample(n =X.shape[0])
+         self.X = X
          self.data_test =  Y
          self.all_data = Z #when there is no test.csv X+Y = Z
          data_train = self.X 
@@ -752,7 +752,7 @@ class DATAREAD():
     
     def initializedataset(self,Z,X,Y,attributute,unique_num=20 ):
          #X is training data  Y is test data all_data is X+Y
-         self.X = X.sample(n =X.shape[0])
+         self.X = X
          self.data_test =  Y
          self.all_data = Z #when there is no test.csv X+Y = Z
          data_train = self.X 
@@ -842,7 +842,7 @@ class DATAREAD():
         pca1.fit_transform(self.data_train_discrete)
        # print(self.data_train_discrete.shape)
         #print("Base Line PCA feature importance")
-        #print(abs(pca1.components_))
+        print(pca1.components_)
         self.RankingFeatureImportance(abs(pca1.components_),self.data_train_discrete.shape[1])
         #print("Base Line PCA explained_variance_ratio_")
         print(pca1.explained_variance_ratio_)

@@ -71,6 +71,7 @@ class CDSOM():
         self.community_distance = 1
 
         self.data_train_all = data_train_all
+        #print(f"data_train_all {data_train_all} ")
         self.data_test_all = data_test_all
 
         self.data_train_continuous = data_train_continuous   
@@ -83,6 +84,7 @@ class CDSOM():
         self.data_test_discrete_normalized = data_test_discrete_normalized
 
         self.data_train_baseline_encoded = data_train_baseline_encoded
+        #print(f"data_train_baseline_encoded {data_train_baseline_encoded} ")
         self.data_test_baseline_encoded = data_test_baseline_encoded
 
         self.train_label_all = label_train_all
@@ -579,8 +581,8 @@ class CDSOM():
 
 
     def getScore(self,scorename, y_true, y_pred):
-       # print(len(y_true))
-       # print(len(y_pred))
+      #  print(len(y_true))
+      #  print(len(y_pred))
         self.purity_score(scorename,y_true,y_pred)
         self.nmiScore(scorename,y_true,y_pred)
         self.ariScore(scorename,y_true,y_pred)
@@ -702,6 +704,13 @@ class CDSOM():
        # print(f" similiary_score {similiary_score}")
         #return  similiary_score
         return round(len(np.intersect1d(feature_group, one_neuron_predict_group))/len(feature_group),3)
+    
+
+    def getCommanIndexesRatioInNeurons_fuzzy(self, feature_group_intersection, one_neuron_predict_group): # membership funciton
+        # difference with getCommanIndexesRatioInNeurons is the denomitor
+        if len(one_neuron_predict_group) !=0:
+            return round(len(np.intersect1d(feature_group_intersection, one_neuron_predict_group))/len(one_neuron_predict_group),3) 
+        else: return 0
     def getFeatureGroups(self, feature_column_data):
         #feature_group = dictionary{value:[indexes], value2: [indexes]} feature_column_data =
         feature_group = {}
@@ -840,6 +849,30 @@ class CDSOM():
             onesinglefeatureneuronprobablity[key] = probability_list
             #print(f"key {key} probability_list) {probability_list} ")
         return onesinglefeatureneuronprobablity
+    
+
+
+    def getOneSingleFeatureNeuronProbability_fuzzy(self, one_feature_dic, neuron_predicted_groups):
+        onesinglefeatureneuronprobablity = {}
+        #print(f"neuron_predicted_groups {neuron_predicted_groups} ")
+        for key in one_feature_dic.keys():
+            probability_list = []
+            for i in range(0,len(neuron_predicted_groups)) :  
+                #print("New neuron _predicted group !!!")       
+                probability = self.getCommanIndexesRatioInNeurons_fuzzy(one_feature_dic[key],neuron_predicted_groups[i]) 
+                #print(f"i {i} neuron_predicted_groups[i] {len(neuron_predicted_groups[i])}")  
+                probability_list.append(probability)
+            #print(f"key {key} probability_list{probability_list}")
+            probability_list = np.array(probability_list)
+            onesinglefeatureneuronprobablity[key] = probability_list
+           # print(f"key {key} probability_list fuzzy) {probability_list} ")
+        return onesinglefeatureneuronprobablity
+
+    def getEachNeuronProbabilityOfEachFeatureValue_fuzzy(self,neuron_predicted_groups):
+        self.all_features_mapping_fuzzy ={}
+        for i in range(0, len(self.all_feature_groups)):
+           # print(f"  feature  {i}!!!!!!!!!!!")
+            self.all_features_mapping_fuzzy[i] = self.getOneSingleFeatureNeuronProbability_fuzzy(self.all_feature_groups[i],neuron_predicted_groups)
 
     def getOneSingleFeatureNeuronProbability_subjective(self, one_feature_dic, neuron_predicted_groups):
         onesinglefeatureneuronprobablity = {}
@@ -884,7 +917,7 @@ class CDSOM():
         self.all_features_mapping ={}
         for i in range(0, len(self.all_feature_groups)):
            # print(f"  feature  {i}!!!!!!!!!!!")
-            self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability(self.all_feature_groups[i],neuron_predicted_groups)
+            self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability_fuzzy(self.all_feature_groups[i],neuron_predicted_groups)
            # self.all_features_mapping[i] = self.getOneSingleFeatureNeuronProbability_subjective(self.all_feature_groups[i],neuron_predicted_groups)
             #print(f"  self.all_features_mapping[i]  {self.all_features_mapping[i]}!!!!!!!!!!!")
 
@@ -1124,19 +1157,24 @@ class CDSOM():
 
         self.getAllfeatureGroups()  #group each column by feature value get    self.all_feature_groups
 
-        self.som.fit(self.data_train_all)   
-   
-        weight_original = self.som.weights0
-        self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_original)   
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label,self.data_train_all)      
-        #Get SOG Mapping
-        self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
+      # self.som.fit(self.data_train_all)   
+      # #print(self.data_train_all)
+      # weight_original = self.som.weights0
+      # self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_original)   
+      # predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label,self.data_train_all)      
+      # #Get SOG Mapping
+      # self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
 
         #train by baseline encoder
         self.som_discrete_baseline_encoder.fit(self.data_train_baseline_encoded)
+        #print(self.data_train_baseline_encoded)
         weight_discrete_baseline = self.som_discrete_baseline_encoder.weights0
+       # print(f"weight_discrete_baseline {self.som_discrete_baseline_encoder.weights0.shape}")
         self.train_discrete_W0_predicted_label = self.som_discrete_baseline_encoder.predict(self.data_train_baseline_encoded,weight_discrete_baseline)   
+
         predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_discrete_baseline_encoder.weights0.shape[0], self.train_discrete_W0_predicted_label,self.data_train_baseline_encoded)   
+        
+        self.getEachNeuronProbabilityOfEachFeatureValue(predicted_clusters_indexes)
 
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
         # the value in predicted_clusters are true label value    
@@ -1154,33 +1192,38 @@ class CDSOM():
 
         #get new embedding data with SOG mapping
         self.discrete_data_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_train_discrete_unnormalized)   
-        
-        dim= self.discrete_data_embedding_sog.shape[1]
+        self.train_hybrid_embedding_sog = np.concatenate((self.data_train_continuous,self.discrete_data_embedding_sog), axis=1)  
+       # print(f"self.train_hybrid_embedding_sog  {self.train_hybrid_embedding_sog }")
+        dim= self.train_hybrid_embedding_sog.shape[1]
         #print(f"self.training_new_embedding  {self.discrete_data_embedding.shape} " )
         # new som neuron number is not changed, m,n not change
-        self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.weights0.shape[0] , self.som_discrete_baseline_encoder.weights0.shape[1],dim) 
+        self.som_sog = newSom.SOM(self.som_discrete_baseline_encoder.m , self.som_discrete_baseline_encoder.n,dim) 
 
-        self.som_sog.fit(self.discrete_data_embedding_sog)
+        self.som_sog.fit(self.train_hybrid_embedding_sog,showlog= False)
         weight_sog = self.som_sog.weights0
-
-        self.train_W_baseline_predicted_label = self.som_sog.predict(self.discrete_data_embedding_sog,weight_sog)    
-        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.train_W_baseline_predicted_label,self.discrete_data_embedding_sog)   
-
+      #  print(f"weight_JSD {weight_sog.shape}")
+        self.train_W_baseline_predicted_label = self.som_sog.predict(self.train_hybrid_embedding_sog,weight_sog)    
+        predicted_clusters_indexes, current_clustered_datas = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.train_W_baseline_predicted_label,self.train_hybrid_embedding_sog)   
+      
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.train_label_all) ,0)  
         # the value in predicted_clusters are true label value    
         transferred_predicted_label_train_W0 =  self.convertPredictedLabelValue(self.train_W_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)      
-
+      
         self.getScore("train_discrete_score_W_discrete",self.train_label_all,transferred_predicted_label_train_W0)
-
+      
         self.test_new_embedding_sog = self.getEmbeddingWithNeuronProbablity(self.data_test_discrete_unnormalized)
-        self.test_discrete_baseline_predicted_label = self.som_sog.predict(self.test_new_embedding_sog,weight_sog) 
+
+        self.test_hybrid_embedding_sog = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog), axis=1)  
+
+        self.test_discrete_baseline_predicted_label = self.som_sog.predict(self.test_hybrid_embedding_sog,weight_sog) 
 
         predicted_clusters_transferred, current_clustered_datas_cleaned = self.get_indices_and_data_in_predicted_clusters(weight_sog.shape[0],  self.test_discrete_baseline_predicted_label,self.test_new_embedding_sog) 
         self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_transferred,self.test_label_all) ,2)  
         transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue( self.test_discrete_baseline_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete) 
         self.getScore("test_discrete_score_W_discrete",self.test_label_all,transferred_predicted_label_test_W_transferred)
           
- 
+        if self.test_discrete_score_W_discrete_p < self.test_discrete_score_W0_p:
+             print("Not good nmi result for discrete features !!!!!")
         if self.test_discrete_score_W_discrete_n < self.test_discrete_score_W0_n:
              print("Not good nmi result for discrete features !!!!!")
         if self.test_discrete_score_W_discrete_a < self.test_discrete_score_W0_a:

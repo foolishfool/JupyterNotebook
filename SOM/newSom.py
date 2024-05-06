@@ -10,7 +10,8 @@ import copy
 import numpy as np
 from sklearn import preprocessing
 from scipy.spatial import distance
-
+from numpy.linalg import norm
+from scipy.stats import entropy
 class SOM():
     """
     The 2-D, rectangular grid self-organizing map class using Numpy.
@@ -59,6 +60,7 @@ class SOM():
         rng = np.random.default_rng(None)
 
         self.weights= rng.normal(size=(m * n, dim))
+        #self.weights = np.zeros((m*n, dim))
         #print("initila self.weigts {} ".format(self.weights.shape))
         self.weights0= rng.normal(size=(m * n, dim))
         self.weights1= rng.normal(size=(m * n, dim))
@@ -128,6 +130,31 @@ class SOM():
         # Find index of best matching unit
         return np.argmin(distance)
     
+    def _find_bmu_JSD(self,x, newWeights):
+        """
+        Find the index of the best matching unit for the input vector x.
+        """
+
+        
+        all_jsd =[]
+        
+
+        for weight in newWeights :
+           all_jsd.append(self.JSD(x,weight))
+        #if showlog:  
+        #    print("x len{} newWeights.shape[0]  {}".format(len(x), newWeights.shape[0])) 
+        # Stack x to have one row per weight *********** get the all the element for one row
+        # when split_nubmer = 0 corresponds to weight0, split_nubmer n represent Wn
+     #   x_stack = np.stack([x]*(newWeights.shape[0]), axis=0)
+        # Calculate distance between x and each weight  ， it use the norm to represent the distance of the concept of vector x_stack - newWeights
+       # if showlog:
+        #    print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
+       # if x_stack.shape != newWeights.shape:
+        #    print("x {} x_stack{}  newWeights {} m {} n{} dim{}".format(x, x_stack, newWeights, self.m,self.n,self.dim))
+       # distance = np.linalg.norm((x_stack - newWeights).astype(float), axis=1)
+        # Find index of best matching unit
+        return np.argmin(all_jsd)
+    
     
     def _find_bmu_hamming(self,x, newWeights):
         hamming_distances =[]
@@ -163,7 +190,7 @@ class SOM():
         """
         Do one step of training on the given input vector.
         """
-        #print(f"x {x}")
+     #   print(f"x {x}")
         # Stack x to have one row per weight 
         x_stack = np.stack([x]*(self.m*self.n), axis=0)
         #print("x_stack {}".format(x_stack))
@@ -172,11 +199,13 @@ class SOM():
         # x_stack , with mxn row , each row has the same array: x
         # Get index of best matching unit
        # print(showlog)
-        #if showlog == True:
+        if showlog == True:
         #    print("x {} {}".format(x, self.weights.shape) )
+             print("x {} ".format(x) )
         bmu_index = self._find_bmu(x,self.weights,showlog)
-        
-        #print("bmu_index{}".format(bmu_index));
+        if showlog == True:
+            print("bmu_index{}".format(bmu_index))
+        #print("self.weights{}".format(self.weights))
         # Find location of best matching unit, _locations is all the indices for a given matrix for array
         # bmu_location is the bmu_indexth element in _locations, such as if bmu_index = 4 in [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]] it return [2,0]
         bmu_location = self._locations[bmu_index,:]
@@ -346,10 +375,10 @@ class SOM():
             else:
                 indices = np.arange(n_samples)                       
             
-
+           # print(f"indices {indices}")     
          # Train
             for idx in indices:
-
+                
              # Break if past max number of iterations
                 if global_iter_counter > self.max_iter:
                     break
@@ -357,7 +386,7 @@ class SOM():
                 #print(X[idx] )
                 
                 input = X[idx]
-
+               # print(f"idx {idx}")     
                 #if (type(input) is np.float64):
                 #    input = [input]
                 # Do one step of training
@@ -550,6 +579,35 @@ class SOM():
         #print(f" labels {labels}")
         return labels
     
+    def predict_JSD(self,X, newWeights):
+        """
+        train_data_clusters = [[1,2,6]]
+        """
+
+        #print("weights used:\n")
+        #print(newWeights)
+        # Check to make sure SOM has been fit
+        if not self.trained:
+            raise NotImplementedError('SOM object has no predict() method until after calling fit().')
+
+        # Make sure X has proper shape
+        #print("len(X.shape) {}".format(len(X.shape)))
+        if (len(X.shape) == 1):
+            print(f"X{X}")
+        assert len(X.shape) == 2, f'X should have two dimensions, not {len(X.shape)}'
+        assert X.shape[1] == self.dim, f'This SOM has dimesnion {self.dim}. Received input with dimension {X.shape[1]}'
+       # print(11111111111)
+        labels = np.array([self._find_bmu_JSD(x,newWeights) for x in X])
+        #print(f" labels {labels}")
+        return labels
+    
+
+
+    def JSD(self,P, Q):
+            _P = P / norm(P, ord=1)
+            _Q = Q/ norm(Q, ord=1)
+            _M = 0.5 * (_P + _Q)
+            return 0.5 * (entropy(_P, _M) + entropy(_Q, _M))
     
     def predict_with_probaility(self,X, newWeights,train_data_clusters):
         """

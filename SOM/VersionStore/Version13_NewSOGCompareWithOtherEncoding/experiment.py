@@ -193,7 +193,8 @@ class Experiment():
                      dataread.data_test_baseline_encoded,
                      dataread.label_train,
                      dataread.label_test)                        
-
+           # print(f"   dataread.data_train {  dataread.data_train}")
+          #  print(f"  dataread.data_train_baseline_encoded { dataread.data_train_baseline_encoded}")
             if compareType == 0: # normalized and then do the COSOM
                 optimize_W.do_COSOM(optimize_W.som_discrete_original,optimize_W.data_train_discrete_normalized, optimize_W.data_train_discrete_unnormalized , optimize_W.data_test_discrete_normalized,optimize_W.data_test_discrete_unnormalized, iscontinous_data_test,0)
             if compareType == 1: # for the discrete data directly do the cosom without normalization

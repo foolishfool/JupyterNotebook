@@ -3,7 +3,7 @@ Script to implement simple self organizing map using PyTorch, with methods
 similar to clustering method in sklearn.
 find intra communiyt in each neuron memberships and do the whole mapping and retest 
 """
-
+import newSom
 #from curses.ascii import NULL
 from sklearn import metrics
 from scipy import spatial
@@ -35,6 +35,7 @@ from fcmeans import FCM
 
 import itertools
 import newSom
+import KLSom
 # unsupervised continus and discrete som
 class CDSOM():
     """
@@ -175,9 +176,11 @@ class CDSOM():
             self.all_train_score_W_combine_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
             print("all_train_score_W_combine_p {}".format(self.all_train_score_W_combine_p ))  
         if(scorename == "test_score_W0" ):
+           # print("test_score_W0  purity_score y_true{}  y_pred {} ".format(y_true,y_pred))
             self.test_score_W0_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
             print("test_score_W0_p{}".format(self.test_score_W0_p ))
         if(scorename == "test_score_W_combine" ):
+           # print("test_score_W_combine  purity_score y_true{}  y_pred {} ".format(y_true,y_pred))
             self.test_score_W_combine_p = np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix) 
             print("test_score_W_combine_p {}".format(self.test_score_W_combine_p ))
         if(scorename == "test_discrete_score_W_discrete" ):
@@ -591,8 +594,8 @@ class CDSOM():
 
 
     def getScore(self,scorename, y_true, y_pred):
-        print(len(y_true))
-        print(len(y_pred))
+       # print(len(y_true))
+       # print(len(y_pred))
         self.purity_score(scorename,y_true,y_pred)
         self.nmiScore(scorename,y_true,y_pred)
         self.ariScore(scorename,y_true,y_pred)
@@ -1146,7 +1149,7 @@ class CDSOM():
                     #**** it is not correct, just for a certain dataset, which has lots of data but certain features have very small propration, so when resample the traiing data, that feature is not incluced, but in the test data it has such feature value 
                     for value in self.all_features_mapping_fuzzy[j][fakekey]:
                         newdata.append(value) 
-            #print(f"the original discrete data : {x} and proposed encoded data representation: {newdata} ")
+           # print(f"the original discrete data : {x} and proposed encoded data representation: {newdata} ")
             newX.append(newdata)
            
        # print(f"new embedding {newX}")
@@ -1413,239 +1416,57 @@ class CDSOM():
         """
         # first step,  get discrete data classification 
 
-
-        #clf = LinearDiscriminantAnalysis()
-       # clf = RandomForestClassifier(n_estimators = 500, criterion = 'gini',max_features =None)
-        #clf = KNeighborsClassifier(weights="distance")
-        #clf = svm.SVC(kernel='sigmoid')
-        #clf = GaussianNB()
-        #clf = LogisticRegression(penalty ='l2',multi_class ='multinomial', random_state=0,l1_ratio =0)
-        #clf = LogisticRegression()
-        #clf = DecisionTreeClassifier(criterion='entropy', max_features='sqrt')
-
-
-       # clf.fit(self.data_train_discrete_unnormalized, self.train_label_all)
-
-        #class_result_test = clf.predict(self.data_test_discrete_unnormalized)
-       # self.getScores("Original",self.test_label_all,class_result_test)
-    
-      
-        
-        #self.getAllFeatureCombinationsGroupGranular(self.data_train_discrete_unnormalized)
-
-
-
         self.getAllfeatureGroups()  #group each column by feature value get    self.all_feature_groups    
-        self.som_discrete.fit(self.data_train_discrete_unnormalized)   
-     #   print(f"elf.som.weights0 shape {self.som.weights0.shape}")
-        weight_original = self.som_discrete.weights0
-        self.train_W0_predicted_label = self.som_discrete.predict(self.data_train_discrete_unnormalized,weight_original)   
+        self.som.fit(self.data_train_all) 
+        #print(f"self.data_train_all {self.data_train_all}")
+        weight_original = self.som.weights0
+       # print(f"weight_original {weight_original}")
+        self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_original)   
 
-       # print(f"self.train_W0_predicted_label 1{self.train_W0_predicted_label}")
-        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som_discrete.weights0.shape[0], self.train_W0_predicted_label) 
-
-
-
-
-        self.getFeatureCombination_attention(all_feature_column,features_chosoen)  #get self.all_combinations [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
+        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label) 
         
-        self.train_combinationns = self.getOrignalDataNewCombinationEmbedding(self.data_train_discrete_unnormalized,self.all_combinations)
-        self.test_cominations = self.getOrignalDataNewCombinationEmbedding(self.data_test_discrete_unnormalized,self.all_combinations)
-
-        
-        
-        
-        # get self.all_feature_combinations_sog_embedding
-       #1 self.all_feature_combinations_sog_embedding ={}
-       #1 for element in self.all_combinations:            
-       #1        #print(f"pair {element} ")  #element =(0,1)  pair of features
-       #1        one_tuple_feature_clusters ,one_tuple_feature_clusters_union = self.clusterMultipleFeatures(self.data_train_discrete_unnormalized,element)
-       #1        #print(f"one_tuple_feature_clusters len  {len(one_tuple_feature_clusters)}")
-       #1        self.all_feature_combinations_sog_embedding[element] = self.getMultipleFeaturesNeuronProbability_fuzzy(one_tuple_feature_clusters,one_tuple_feature_clusters_union, predicted_clusters_indexes)
-       #1       # print(f" self.all_feature_combinations_sog_embedding[element]  { self.all_feature_combinations_sog_embedding[element]}")
-       #1# print(f"all_feature_combinations_sog_embedding {self.all_feature_combinations_sog_embedding}")
-
-    
         self.getEachNeuronProbabilityOfEachFeatureValue_fuzzy(predicted_clusters_indexes)
+
+        #print(f"weight_original {weight_original}")
+        self.test_discrete_W0_predicted_label = self.som.predict(self.data_test_all,weight_original)
+
+        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.test_discrete_W0_predicted_label)   
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.test_label_all) ,0)    
+        transferred_predicted_label_test_W0 =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Original)   
+
+       # print(f"class_result_test {class_result_test}")
+        self.getScore("test_score_W0",self.test_label_all,transferred_predicted_label_test_W0)    
+    
+    
 
 
         self.train_new_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized)
         self.test_new_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized)
-       #2 print(f"self.train_new_embedding_sog_fuzzy.shape  {self.train_new_embedding_sog_fuzzy.shape}")
-        #self.train_new_embedding_sog_fuzzy,self.train_new_embedding_sog_fuzzy_features  = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized,features_chosoen)
-        #print(f"self.train_new_embedding_sog_fuzzy_features {self.train_new_embedding_sog_fuzzy_features.shape}")
-        #self.test_new_embedding_sog_fuzzy,self.test_new_embedding_sog_fuzzy_features  = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized,features_chosoen)
-        #print(self.discrete_data_embedding_sog_fuzzy.shape)
-
-        #self.getEachNeuronProbabilityOfMultipleFeatureValue_fuzzy(predicted_clusters_indexes)
-
-       
-        #2 fcm = FCM(n_clusters=self.som_discrete.weights0.shape[0])
-       #2  fcm.fit(self.data_train_discrete_unnormalized)
-
-        #2 self.train_W0_predicted_label = fcm.predict(self.data_train_discrete_unnormalized)   
-      #  print(f"self.train_W0_predicted_label 2{self.train_W0_predicted_label}")
-        #2 predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som_discrete.weights0.shape[0], self.train_W0_predicted_label) 
-
-        #2self.getEachNeuronProbabilityOfEachFeatureValue_fuzzy(predicted_clusters_indexes)
-
-        #2self.train_new_embedding_fuzzyc = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized)
-        #2self.test_new_embedding_fuzzyc = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized)
-
-     #2   self.train_discrete_extra_sog_fuzzyc =  np.concatenate((self.train_new_embedding_sog_fuzzy,self.train_new_embedding_fuzzyc), axis=1)  
-      #2  self.test_discrete_extra_sog_fuzzyc =  np.concatenate((self.test_new_embedding_sog_fuzzy,self.test_new_embedding_fuzzyc), axis=1)  
+        self.train_hybrid_embedding_sog = np.concatenate((self.data_train_continuous,self.train_new_embedding_sog_fuzzy), axis=1) 
+        self.test_hybrid_embedding_sog = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog_fuzzy), axis=1) 
+       # print(f"self.train_hybrid_embedding_sog  {self.train_hybrid_embedding_sog }")
+        self.som_sog = KLSom.KLSOM(m=self.som_discrete.m, n= self.som_discrete.n, dim= self.train_hybrid_embedding_sog.shape[1]) 
+        self.som_sog.fit(self.train_hybrid_embedding_sog,showlog=False)   
+        weight_JSD = self.som_sog.weights0
+       # print(f"weight_JSD {weight_JSD}")
 
 
-        #1 self.discrete_data_embedding_sog_multiple_feature_fuzzy = self.getEmbeddingWithNeuronProbablity_multiple_features_fuzzy(self.data_train_discrete_unnormalized,self.all_combinations)
-        #1 self.test_new_embedding_sog_multiple_feature_fuzzy = self.getEmbeddingWithNeuronProbablity_multiple_features_fuzzy(self.data_test_discrete_unnormalized,self.all_combinations)
 
-        #print(f"self.discrete_data_embedding_sog_multiple_feature_fuzzy shape {self.discrete_data_embedding_sog_multiple_feature_fuzzy.shape}")
-        
-       #2  print(f"self.train_discrete_extra_sog_fuzzyc { self.train_discrete_extra_sog_fuzzyc.shape}") 
-        #self.train_new_embedding_sog_fuzzy_remove_zero  = self.train_new_embedding_sog_fuzzy [:, np.any(self.train_new_embedding_sog_fuzzy , axis=0)]
-        #self.test_new_embedding_sog_fuzzy_remove_zero  = self.test_new_embedding_sog_fuzzy [:, np.any(self.test_new_embedding_sog_fuzzy , axis=0)]
+        self.test_discrete_W0_predicted_label = self.som_sog.predict(self.test_hybrid_embedding_sog,weight_JSD)
+        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som_sog.weights0.shape[0], self.test_discrete_W0_predicted_label)   
+        self.getLabelMapping( self.get_mapped_class_in_clusters(predicted_clusters_indexes,self.test_label_all) ,2)    
+        transferred_predicted_label_test_W_transferred =  self.convertPredictedLabelValue(self.test_discrete_W0_predicted_label,self.PLabel_to_Tlabel_Mapping_W_Discrete)   
 
-       #1 self.train_discrete_extra_sog_fuzzy =  np.concatenate((self.train_new_embedding_sog_fuzzy,self.discrete_data_embedding_sog_multiple_feature_fuzzy), axis=1)  
-       #1 self.test_discrete_extra_sog_fuzzy =  np.concatenate((self.test_new_embedding_sog_fuzzy,self.test_new_embedding_sog_multiple_feature_fuzzy), axis=1)  
-
-      #1  print(f"self.discrete_data_embedding_sog_multiple_feature_fuzzy.shape  {self.discrete_data_embedding_sog_multiple_feature_fuzzy.shape}")
-        #clf2 =  LinearDiscriminantAnalysis(solver ='lsqr',n_components = 1, shrinkage =0.8)
-       # clf2 =svm.SVC(C= 0.12, kernel='linear')
-        #clf2 = RandomForestClassifier(criterion ='log_loss',min_weight_fraction_leaf = 0.002,min_impurity_decrease = 0.005)
-        #clf2 =GaussianNB(var_smoothing = 200)
-       # clf2 = DecisionTreeClassifier(criterion = 'log_loss',splitter ='random',max_depth = 2, min_samples_leaf = 25)
-        #clf2 = LogisticRegression(penalty ='l2',multi_class ='multinomial', random_state=0,l1_ratio =0)
-        clf2 = KNeighborsClassifier(weights ='distance',algorithm = 'ball_tree',leaf_size =350, p =2)
-        #clf2 = LogisticRegression(penalty ='l2' ,multi_class ='auto',class_weight = None,max_iter = 10, solver = 'liblinear')
-        #clf2.fit(self.data_train_discrete_unnormalized, self.train_label_all)
-        clf2.fit(self.train_new_embedding_sog_fuzzy, self.train_label_all)
-        class_result_test2 = clf2.predict(self.test_new_embedding_sog_fuzzy)
-        #class_result_test2 = clf2.predict(self.data_test_discrete_unnormalized)
-        #print("SOG Classficiation")
-       # print(f"self.train_new_embedding_sog_fuzzy shape {self.train_new_embedding_sog_fuzzy.shape}")
-        self.getScores("Original",self.test_label_all,class_result_test2)
+       # print(f"class_result_test2 {class_result_test2}")
+        self.getScore("test_score_W_combine",self.test_label_all,transferred_predicted_label_test_W_transferred)
   
 
-        
+        if self.test_score_W_combine_p < self.test_score_W0_p:
+             print("Not good purity result !!!!!")
+        if self.test_score_W_combine_n < self.test_score_W0_n:
+             print("Not good nmi result !!!!!")
+        if self.test_score_W_combine_a < self.test_score_W0_a:
+            print("Not good ari !!!!!")
 
-        self.getAllfeatureGroupsCombination() # get 
-
-        self.som_combination = newSom.SOM(self.som_discrete.m , self.som_discrete.n, dim= self.train_combinationns.shape[1])  
-        self.som_enchanced_weight = self.getOrignalDataNewCombinationEmbedding( self.som_discrete.weights0,self.all_combinations)
-        self.som_combination.trained = True
-       # self.som_combination.fit(self.train_combinationns)   
-     #   print(f"elf.som.weights0 shape {self.som.weights0.shape}")
-       # weight_combination = self.som_combination.weights0
-        self.train_W0_predicted_label = self.som_combination.predict(self.train_combinationns,self.som_enchanced_weight)   
-        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som_combination.shape[0], self.train_W0_predicted_label) 
-        self.getEachNeuronProbabilityOfEachFeatureValue_fuzzy_combination(predicted_clusters_indexes)
-#
-        self.train_combination_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy_combination(self.train_combinationns)
-        self.test_combination_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy_combination(self.test_cominations)
-#
-#
-        self.train_discrete_extra_sog_fuzzy =  np.concatenate((self.train_new_embedding_sog_fuzzy,self.train_combination_sog_fuzzy), axis=1)  
-        self.test_discrete_extra_sog_fuzzy =  np.concatenate((self.test_new_embedding_sog_fuzzy,self.test_combination_sog_fuzzy), axis=1)  
-        print(f"self.train_discrete_extra_sog_fuzzy shape {self.train_discrete_extra_sog_fuzzy.shape}")
-
-       # clf3 = svm.SVC(C= 0.12, kernel='linear')
-       # clf3 = RandomForestClassifier(criterion ='log_loss',min_weight_fraction_leaf = 0.002,min_impurity_decrease = 0.005)
-       # clf3 = GaussianNB(var_smoothing = 200)
-        #clf3 =  LinearDiscriminantAnalysis(solver ='lsqr',n_components = 1, shrinkage =0.8)
-        clf3 =  KNeighborsClassifier(weights ='distance',algorithm = 'ball_tree',leaf_size =350, p =2)
-        #clf3 = DecisionTreeClassifier(criterion = 'log_loss',splitter ='random',max_depth = 2, min_samples_leaf = 25)
-        #clf3 = LogisticRegression(penalty ='l2' ,multi_class ='auto',class_weight = None,max_iter =10, solver = 'liblinear')
-        #clf3 = LogisticRegression()
-        #clf3 = LogisticRegression(penalty ='l2' ,multi_class ='auto',class_weight = None,max_iter = 5000, solver = 'liblinear')
-        clf3.fit(self.train_discrete_extra_sog_fuzzy, self.train_label_all)
-        class_result_test3 = clf3.predict(self.test_discrete_extra_sog_fuzzy)
-        #print("SOG Classficiation")
-       # print(f"self.train_new_embedding_sog_fuzzy shape {self.train_new_embedding_sog_fuzzy.shape}")
-        self.getScores("SOG",self.test_label_all,class_result_test3)
-  
-
-        if self.accuracy_score_sog < self.accuracy_score_original:
-             print("Not good accuracy result !!!!!")
-        if self.recall_score_sog < self.recall_score_original:
-             print("Not good recall_score result !!!!!")
-        if self.precision_score_sog < self.precision_score_original:
-            print("Not good precision_score_original !!!!!")
-        if self.f1_score_sog < self.f1_score_original:
-             print("Not good accuracy result !!!!!")
-       # if self.log_loss_sog > self.log_loss_original:
-       #      print("Not good log_loss result !!!!!")
 
      
-
-      
-    def do_DCOSOM(self,features_chosoen):
-        """
-        do discrete optimized SOM 
-        
-        """
-
-        # first step,  get discrete data classification 
-
-
-        #clf = LinearDiscriminantAnalysis(solver='lsqr',shrinkage ='auto')
-        #clf = KNeighborsClassifier(n_neighbors = 10, weights="distance",leaf_size = 10,algorithm ='ball_tree',p =1,n_jobs = -1)
-        #clf = svm.SVC(C=1, gamma=1, kernel='rbf')# # #kernel='rbf',gamma ='auto',decision_function_shape = 'ovr'
-        #clf = GaussianNB()
-        clf =  RandomForestClassifier(n_estimators = 1000, criterion = 'log_loss',max_features =None)
-        #clf = LogisticRegression(penalty ='l2',class_weight ='balanced',solver ='sag',max_iter = 200, multi_class ='multinomial')
-        #clf = DecisionTreeClassifier(criterion='gini', splitter = 'best',min_samples_split = 100, max_depth = 100,max_features='log2')
-
-
-        clf.fit(self.data_train_all, self.train_label_all)
-
-        class_result_test = clf.predict(self.data_test_all)
-        self.getScores("Original",self.test_label_all,class_result_test)
-        #print(f"edata_test_all shape {self.data_test_all.shape}")
-
-        self.getAllfeatureGroups()  #group each column by feature value get    self.all_feature_groups    
-        self.som.fit(self.data_train_all)   
-   
-        weight_original = self.som.weights0
-        self.train_W0_predicted_label = self.som.predict(self.data_train_all,weight_original)   
-
-     
-        predicted_clusters_indexes = self.get_indices_and_data_in_predicted_clusters(self.som.weights0.shape[0], self.train_W0_predicted_label) 
-
-        
-        self.getEachNeuronProbabilityOfEachFeatureValue_fuzzy(predicted_clusters_indexes)
-        #self.discrete_data_embedding_sog_fuzzy = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized)
-        self.train_new_embedding_sog_fuzzy,self.train_new_embedding_sog_fuzzy_features  = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_train_discrete_unnormalized,features_chosoen)
-        #print(f"self.train_new_embedding_sog_fuzzy_features {self.train_new_embedding_sog_fuzzy_features.shape}")
-        self.test_new_embedding_sog_fuzzy,self.test_new_embedding_sog_fuzzy_features  = self.getEmbeddingWithNeuronProbablity_fuzzy(self.data_test_discrete_unnormalized,features_chosoen)
-        #print(f"self.test_new_embedding_sog_fuzzy_features {self.test_new_embedding_sog_fuzzy_features.shape}")
-        self.train_hybrid_embedding_sog = np.concatenate((self.data_train_continuous,self.train_new_embedding_sog_fuzzy), axis=1)  
-        self.test_hybrid_embedding_sog = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog_fuzzy), axis=1)  
-
-        self.train_hybrid_embedding_sog_features = np.concatenate((self.data_train_continuous,self.train_new_embedding_sog_fuzzy_features), axis=1)  
-        #print(f" self.data_test_continuous shape {self.data_test_continuous.shape}   self.test_new_embedding_sog_fuzzy_features shape {self.test_new_embedding_sog_fuzzy_features.shape}")
-        self.test_hybrid_embedding_sog_features = np.concatenate((self.data_test_continuous,self.test_new_embedding_sog_fuzzy_features), axis=1)  
-        #print(f" self.test_hybrid_embedding_sog_features shape {self.test_hybrid_embedding_sog_features.shape}")
-        #clf2 =  LinearDiscriminantAnalysis(solver='lsqr',shrinkage ='auto')
-        #clf2 =  KNeighborsClassifier(n_neighbors = 10, weights="distance",leaf_size = 10, algorithm ='ball_tree',p =1,n_jobs = -1)
-        clf2 = svm.SVC(C=1, gamma=1, kernel='rbf')#rbf
-        #clf2 = GaussianNB()
-        #clf2 = RandomForestClassifier(n_estimators = 1000, criterion = 'log_loss',max_features =None)
-       # clf2 = DecisionTreeClassifier(criterion='gini', splitter = 'best', min_samples_split = 100,  max_depth = 100,max_features='log2')
-        #clf2 = LogisticRegression(penalty ='l2',class_weight ='balanced',solver ='sag',max_iter = 200,multi_class ='multinomial')
-        clf2.fit(self.train_hybrid_embedding_sog_features, self.train_label_all)
-        
-        class_result_test2 = clf2.predict(self.test_hybrid_embedding_sog_features)
-        print("SOG Classficiation")
-        #print(f"self.train_new_embedding_sog_fuzzy shape {self.train_hybrid_embedding_sog.shape}")
-        self.getScores("SOG",self.test_label_all,class_result_test2)
-  
-        if self.accuracy_score_sog < self.accuracy_score_original:
-             print("Not good accuracy result !!!!!")
-        if self.recall_score_sog < self.recall_score_original:
-             print("Not good recall_score result !!!!!")
-        if self.precision_score_sog < self.precision_score_original:
-            print("Not good precision_score_original !!!!!")
-        if self.f1_score_sog < self.f1_score_original:
-             print("Not good accuracy result !!!!!")
-       # if self.log_loss_sog > self.log_loss_original:
-       #      print("Not good log_loss result !!!!!")

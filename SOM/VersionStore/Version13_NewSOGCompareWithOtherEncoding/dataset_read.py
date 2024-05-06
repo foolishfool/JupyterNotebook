@@ -462,7 +462,7 @@ class DATAREAD():
 
     def initializedataset(self,Z,X,Y,X_baseline_encoded,Y_baseline_encoded,attributute,unique_num=20):
          #X is traiing data  Y is test data all_data is X+Y
-         self.X = X.sample(n =X.shape[0])
+         self.X = X
          self.data_test =  Y
          self.all_data = Z #when there is no test.csv X+Y = Z
          data_train = self.X 
@@ -479,7 +479,8 @@ class DATAREAD():
          data_test_baseline_encoded = data_test_baseline_encoded.drop(attributute,axis = 1)
          #remove class that has few data
         # self.removeminorpartdata(label_train,data_train)
-       
+         #print(f" 1111 data_train {data_train}")
+        # print(f" 2222 data_train_baseline_encoded {data_train_baseline_encoded}")
          self.data_continuous_indexes = []
          self.data_discrete_indexes = []
     
@@ -542,8 +543,8 @@ class DATAREAD():
          #print(f"self.data_train {self.data_train}")
          self.data_train_scaled = scaler.transform(self.data_train)
          #print(f"data_train_scaled {self.data_train_scaled}")
-         scaler2 = StandardScaler().fit(self.data_test)
-         self.data_test_scaled = scaler2.transform(self.data_test)
+         #scaler2 = StandardScaler().fit(self.data_test)
+         #self.data_test_scaled = scaler2.transform(self.data_test)
         
          if self.data_train_continuous != [] :
             scaler3 = StandardScaler().fit(self.data_train_continuous)
@@ -633,7 +634,7 @@ class DATAREAD():
        # print (df)
         for name in names:
             df = pd.get_dummies(df, columns=[name])       
-        print (df)  
+       # print (df)  
         self.original_encoding_data = df
         #*** -1 the class labe is not included 
         self.original_encoded_feature_num = df.shape[1]-1
@@ -664,6 +665,8 @@ class DATAREAD():
         self.original_encoding_data = df
         #*** -1 the class labe is not included 
         self.original_encoded_feature_num = df.shape[1]-1
+        
+
 
     def label_encoding(self,X,name):
         X[name] = X[name].astype(str).str.strip()
