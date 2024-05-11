@@ -29,6 +29,7 @@ from sklearn.ensemble import RandomForestClassifier
 from fcmeans import FCM
 from numpy.linalg import norm
 from scipy.stats import entropy
+from sklearn.ensemble import GradientBoostingClassifier
 import random
 import math
 import itertools
@@ -195,7 +196,7 @@ class FCG():
         #print(f" y_pred {y_pred}")
         if score_tpye  == "Baseline":
             self.accuracy_score_baseline = accuracy_score(y_true,y_pred)
-            print(f"accuracy_score_orignial {self.accuracy_score_baseline}")
+            print(f"accuracy_score_baseline {self.accuracy_score_baseline}")
             self.recall_score_baseline = recall_score(y_true,y_pred,average='macro')
             print(f"recall_score_baseline {self.recall_score_baseline}")
             self.precision_score_baseline = precision_score(y_true,y_pred,average='macro')
@@ -432,7 +433,7 @@ class FCG():
        # print(f" dict(sorted_bmu_index_dic) { dict(sorted_bmu_index_dic)}")
         return dict(sorted_bmu_index_dic)
     
-    
+
     def _updateDeltaCentroid_dic(self, x, sorted_bmu_index_dic):
         self.get_membership_distribution_based_class(x)
         #update_ratio_centroid_dic ={}
@@ -467,13 +468,20 @@ class FCG():
     def getCentroidsBySOM(self,X, manually_choose = False):
         #___initialize centroid _____
         
-        if  manually_choose == True:        
-         manually_choose_dic ={0:1421,1:1244,2:738}             
+        if  manually_choose == True: 
+            #manually_choose_dic ={3:69,4:57,0:91,1:110,2:105}
+             #manually_choose_dic ={0:115,4:91,3:99,2:47,1:117}
+            #manually_choose_dic ={0:12,3:19,4:59,1:11,2:129} #drug
+            #manually_choose_dic ={0:80,2:136,1:26,3:165} #student
+          # manually_choose_dic ={1:1135,2:157,0:12,3:235}
+            #manually_choose_dic ={0:567,1:542,2:1042} # netflex
+           # manually_choose_dic ={0:581,1:475}    #hair 
+            manually_choose_dic ={3:607,2:68,5:313,1:102,4:55,7:456,6:340,8:205,9:560}     #Average Time         
         self.centroid_dic = {}
         for key in self.class_index_group_dic: 
             if manually_choose == False:     
                 choosen_index = random.choice(self.class_index_group_dic[key])
-                print(f"key {key}, choosen_index{choosen_index}")
+                print(f"key {key}, choosen_index  { choosen_index}")
                 random_controid = self.train_new_embedding_fcg_fuzzy[random.choice(self.class_index_group_dic[key])]
             else: random_controid = self.train_new_embedding_fcg_fuzzy[manually_choose_dic[key]]
             self.get_membership_distribution_based_class(random_controid)
@@ -514,7 +522,8 @@ class FCG():
        # print(f"self.train_new_embedding_fcg_fuzzy {self.train_new_embedding_fcg_fuzzy}")
        
         # get centeried of Fuzzy Memebership Distribution in each class
-        self.getCentroidsBySOM(  self.train_new_embedding_fcg_fuzzy,True )
+        #self.getCentroidsBySOM(  self.train_new_embedding_fcg_fuzzy,True )
+        self.getCentroidsBySOM(  self.train_new_embedding_fcg_fuzzy,True) #False
         #self.getCnetroidByGruopMean(  self.train_new_embedding_fcg_fuzzy )
         
        # print(f"centeroid_dic {self.centeroid_dic}")
@@ -529,11 +538,15 @@ class FCG():
        # print(f"class_result_test2 {class_result_test2}")
         
 
-        # baseline 
-        clf = KNeighborsClassifier()
+        # baseline
+        clf= GradientBoostingClassifier()
+        #clf= LogisticRegression()
+       ## clf = LinearDiscriminantAnalysis()
+        #clf = RandomForestClassifier()
+        #clf = KNeighborsClassifier()
         #clf = svm.SVC()
         #clf = GaussianNB()
-        #clf = DecisionTreeClassifier(criterion='log_loss', splitter='random')
+        #clf = DecisionTreeClassifier()
         clf.fit(self.data_train_discrete_unnormalized, self.train_label_all)
 
         class_result_test = clf.predict(self.data_test_discrete_unnormalized)
