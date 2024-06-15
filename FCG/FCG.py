@@ -474,9 +474,9 @@ class FCG():
             #manually_choose_dic ={0:12,3:19,4:59,1:11,2:129} #drug
             #manually_choose_dic ={0:80,2:136,1:26,3:165} #student
           # manually_choose_dic ={1:1135,2:157,0:12,3:235}
-            #manually_choose_dic ={0:567,1:542,2:1042} # netflex
+            manually_choose_dic ={0:71,1:1659,2:1073} # netflex
            # manually_choose_dic ={0:581,1:475}    #hair 
-            manually_choose_dic ={3:607,2:68,5:313,1:102,4:55,7:456,6:340,8:205,9:560}     #Average Time         
+           # manually_choose_dic ={3:607,2:68,5:313,1:102,4:55,7:456,6:340,8:205,9:560}     #Average Time         
         self.centroid_dic = {}
         for key in self.class_index_group_dic: 
             if manually_choose == False:     
@@ -539,9 +539,9 @@ class FCG():
         
 
         # baseline
-        clf= GradientBoostingClassifier()
+       # clf= GradientBoostingClassifier()
         #clf= LogisticRegression()
-       ## clf = LinearDiscriminantAnalysis()
+        clf = LinearDiscriminantAnalysis()
         #clf = RandomForestClassifier()
         #clf = KNeighborsClassifier()
         #clf = svm.SVC()
